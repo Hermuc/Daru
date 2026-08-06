@@ -10,6 +10,10 @@
         }
     },
     "extract_dir": "dist\\Ghost-Downloader-3.dist",
+    "notes": [
+        "程序本体为绿色便携；运行时缓存位于 %AppData%\\GhostDownloader（退出时自动清理），",
+        "用户设置若产生也存于该目录，不随程序目录迁移。"
+    ],
     "shortcuts": [
         [
             "Ghost-Downloader-3.exe",
