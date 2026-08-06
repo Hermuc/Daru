@@ -9,16 +9,17 @@
 hermuc-bucket/
 ├── .github/workflows/excavator.yml  # 自动检查上游新版本并更新 manifest
 ├── README.md          # 本说明文件
-└── bucket/            # 所有 manifest（JSON）必须放在此目录
-    ├── example-app.json
-    └── ghost-downloader-3.json
+└── bucket/            # ScoopInstaller/GithubActions 要求的嵌套结构
+    └── bucket/        # 所有 manifest（JSON）必须放在此目录
+        ├── example-app.json
+        └── ghost-downloader-3.json
 ```
 
 ## 使用方法
 
 ```powershell
 # 添加
-scoop bucket add hermuc-bucket https://github.com/<你的用户名>/hermuc-bucket.git
+scoop bucket add hermuc-bucket https://github.com/Hermuc/hermuc-bucket.git
 
 # 搜索 / 安装
 scoop search <name>
