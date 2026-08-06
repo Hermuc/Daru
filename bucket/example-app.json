@@ -1,0 +1,36 @@
+{
+    "##": "这是示例/模板 manifest，不是真实软件。复制本文件并替换所有占位值后使用。",
+    "version": "1.0.0",
+    "description": "[TEMPLATE] 示例：便携版软件模板（真实软件请替换所有字段）",
+    "homepage": "https://github.com/Author/Repo",
+    "license": "MIT",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Author/Repo/releases/download/v1.0.0/App-1.0.0-win-x64-portable.zip#/dl.zip",
+            "hash": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+    },
+    "extract_dir": "App-1.0.0",
+    "pre_install": [
+        "# 可选：安装前执行的 PowerShell 语句，例如创建空配置文件避免首次运行写入 AppData"
+    ],
+    "bin": "app.exe",
+    "shortcuts": [
+        [
+            "app.exe",
+            "App Name"
+        ]
+    ],
+    "persist": [
+        "config",
+        "data"
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Author/Repo/releases/download/v$version/App-$version-win-x64-portable.zip"
+            }
+        }
+    }
+}
