@@ -1,0 +1,36 @@
+{
+    "version": "2.25.5",
+    "description": "Free, open-source Windows optimization tool for performance, privacy, and simplicity (requires admin to run)",
+    "homepage": "https://github.com/itsFatduck/optimizerDuck",
+    "license": "GPL-3.0-only",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/itsFatduck/optimizerDuck/releases/download/v2.25.5/optimizerDuck-Windows-x64-2.25.5.exe#/dl.exe",
+            "hash": "74a4e5e9190a955f87b623305a7baf2eb8af73436521758bfa58d8c7033b96ce"
+        }
+    },
+    "pre_install": [
+        "# 单文件程序：解除只读属性，确保 shim/快捷方式可执行",
+        "Set-ItemProperty \"$dir\\dl.exe\" -Name IsReadOnly -Value $false"
+    ],
+    "bin": [
+        [
+            "dl.exe",
+            "optimizerduck"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "dl.exe",
+            "optimizerDuck"
+        ]
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/itsFatduck/optimizerDuck/releases/download/v$version/optimizerDuck-Windows-x64-$version.exe#/dl.exe"
+            }
+        }
+    }
+}
