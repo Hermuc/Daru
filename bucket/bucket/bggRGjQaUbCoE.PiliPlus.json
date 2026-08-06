@@ -1,0 +1,59 @@
+{
+    "version": "2.1.0",
+    "description": "使用 Flutter 开发的 BiliBili 第三方客户端 | A third-party BiliBili client developed using Flutter",
+    "homepage": "https://github.com/bggRGjQaUbCoE/PiliPlus",
+    "license": {
+        "identifier": "GPL-3.0-or-later"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/bggRGjQaUbCoE/PiliPlus/releases/download/2.1.0/PiliPlus_windows_2.1.0+5109_x64_portable.zip",
+            "hash": "2a224047f55e1431910d527efe63a23828c701b8622e8c314d4e2102aa13349d"
+        }
+    },
+    "extract_dir": "PiliPlus-Win",
+    "extract_to": "app",
+    "pre_install": [
+        "# 数据目录 Junction 化：AppData 路径 -> persist（首次/迁移时自动搬运已有数据）",
+        "$link = \"$env:AppData\\com.example\\piliplus\"",
+        "$dst = \"$persist_dir\\AppData\\Roaming\\com.example\\piliplus\"",
+        "if (Test-Path $link) {",
+        "    $item = Get-Item $link -Force",
+        "    if ($item.LinkType -eq 'Junction') {",
+        "        $old = $item.Target",
+        "        if ($old -ne $dst) { robocopy $old $dst /E /MOVE /R:1 /W:1 /NP /NFL /NDL /NJH /NJS | Out-Null }",
+        "        Remove-Item $link -Force",
+        "    } else {",
+        "        robocopy $link $dst /E /MOVE /R:1 /W:1 /NP /NFL /NDL /NJH /NJS | Out-Null",
+        "    }",
+        "}"
+    ],
+    "post_install": [
+        "New-Item -ItemType Junction -Path \"$env:AppData\\com.example\\piliplus\" -Target \"$persist_dir\\AppData\\Roaming\\com.example\\piliplus\" | Out-Null"
+    ],
+    "pre_uninstall": [
+        "Stop-Process -Name 'piliplus' -Force -ErrorAction SilentlyContinue",
+        "if ((Test-Path \"$env:AppData\\com.example\\piliplus\") -and ((Get-Item \"$env:AppData\\com.example\\piliplus\" -Force).LinkType -eq 'Junction')) { Remove-Item \"$env:AppData\\com.example\\piliplus\" -Force }"
+    ],
+    "cleanup": "$env:LocalAppData\\com.example\\piliplus",
+    "shortcuts": [
+        [
+            "app\\piliplus.exe",
+            "PiliPlus"
+        ]
+    ],
+    "persist": [
+        "AppData\\Roaming\\com.example\\piliplus"
+    ],
+    "checkver": {
+        "url": "https://api.github.com/repos/bggRGjQaUbCoE/PiliPlus/releases/latest",
+        "regex": "/download/([^/]+)/PiliPlus_windows_(?<main>[\\d.]+)%2B(?<build>\\d+)_x64_portable.zip"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/bggRGjQaUbCoE/PiliPlus/releases/download/$version/PiliPlus_windows_$matchMain+$matchBuild_x64_portable.zip"
+            }
+        }
+    }
+}

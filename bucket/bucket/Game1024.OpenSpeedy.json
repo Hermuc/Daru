@@ -1,0 +1,59 @@
+{
+    "version": "3.3.8",
+    "description": "一款开源免费的游戏变速工具，助您突破帧率限制，带来更流畅丝滑的游戏加速体验 | An open-source and free game speed tool that helps you break frame rate limitations and provides a smoother, silkier gaming acceleration experience",
+    "homepage": "https://github.com/game1024/OpenSpeedy",
+    "license": {
+        "identifier": "GPL-3.0-or-later"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/game1024/OpenSpeedy/releases/download/3.3.8/OpenSpeedy-3.3.8-portable-signed.zip",
+            "hash": "8b95af6706c826d3e9bc53f8a97998b40ed0f526c03aa72263b81cc6fa411aac"
+        }
+    },
+    "extract_to": "app",
+    "pre_install": [
+        "# 数据目录 Junction 化：AppData 路径 -> persist（首次/迁移时自动搬运已有数据）",
+        "$link = \"$env:AppData\\com.game1024.openspeedy\"",
+        "$dst = \"$persist_dir\\AppData\\Roaming\\com.game1024.openspeedy\"",
+        "if (Test-Path $link) {",
+        "    $item = Get-Item $link -Force",
+        "    if ($item.LinkType -eq 'Junction') {",
+        "        $old = $item.Target",
+        "        if ($old -ne $dst) { robocopy $old $dst /E /MOVE /R:1 /W:1 /NP /NFL /NDL /NJH /NJS | Out-Null }",
+        "        Remove-Item $link -Force",
+        "    } else {",
+        "        robocopy $link $dst /E /MOVE /R:1 /W:1 /NP /NFL /NDL /NJH /NJS | Out-Null",
+        "    }",
+        "}"
+    ],
+    "post_install": [
+        "New-Item -ItemType Junction -Path \"$env:AppData\\com.game1024.openspeedy\" -Target \"$persist_dir\\AppData\\Roaming\\com.game1024.openspeedy\" | Out-Null"
+    ],
+    "pre_uninstall": [
+        "Stop-Process -Name 'OpenSpeedy' -Force -ErrorAction SilentlyContinue",
+        "if ((Test-Path \"$env:AppData\\com.game1024.openspeedy\") -and ((Get-Item \"$env:AppData\\com.game1024.openspeedy\" -Force).LinkType -eq 'Junction')) { Remove-Item \"$env:AppData\\com.game1024.openspeedy\" -Force }"
+    ],
+    "cleanup": "$env:LocalAppData\\com.game1024.openspeedy",
+    "shortcuts": [
+        [
+            "app\\OpenSpeedy.exe",
+            "OpenSpeedy"
+        ]
+    ],
+    "persist": [
+        "AppData\\Roaming\\com.game1024.openspeedy"
+    ],
+    "checkver": {
+        "github": {
+            "channel": "latest"
+        }
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/game1024/OpenSpeedy/releases/download/$version/OpenSpeedy-$version-portable-signed.zip"
+            }
+        }
+    }
+}
