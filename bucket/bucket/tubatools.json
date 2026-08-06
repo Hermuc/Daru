@@ -1,0 +1,77 @@
+{
+    "version": "1.5.0",
+    "description": "图吧工具箱 winUI3 版，现代化的 PC 硬件检测与系统维护工具集 | Modern toolkit for PC hardware detection and system maintenance",
+    "homepage": "https://tubawinui3.cn",
+    "license": {
+        "identifier": "GPL-3.0-or-later"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/luolangaga/tubatools/releases/download/v1.5.0/TubaWinUi3_Setup_1.5.0_x64.exe",
+            "hash": "e4653d2c355b08165451eceb085542bbe255ab7fac9902107172d2be5d882fb9"
+        },
+        "arm64": {
+            "url": "https://github.com/luolangaga/tubatools/releases/download/v1.5.0/TubaWinUi3_Setup_1.5.0_arm64.exe",
+            "hash": "f6f76dae5ce731c685db338d6f648303779438609237184949caf1bd216935b2"
+        }
+    },
+    "pre_install": [
+        "# 安装器需要管理员权限（对应 abyss 原 manifest 的 admin: true）",
+        "if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {",
+        "    Write-Host 'ERROR: tubatools 需要以管理员权限运行 Scoop 才能安装' -ForegroundColor Red",
+        "    exit 1",
+        "}",
+        "# 运行 Inno Setup 安装器，静默安装到 $dir\\app",
+        "$log = \"$env:TEMP\\scoop_tubatools_$($version)_install_inno.log\"",
+        "$args_ = @('/CurrentUser', '/VerySilent', '/SuppressMsgBoxes', '/NoRestart', '/SP-', \"/Log=$log\", \"/Dir=`\"$dir\\app`\"\")",
+        "$p = Start-Process (Join-Path $dir ($fname | Select-Object -First 1)) -ArgumentList $args_ -Wait -PassThru",
+        "if ($p.ExitCode -ne 0) { Write-Host \"ERROR: 安装器退出码 $($p.ExitCode)（详见 $log）\" -ForegroundColor Red; exit 1 }"
+    ],
+    "post_install": [
+        "# 数据目录 Junction 化：LocalAppData 路径 -> persist（首次/迁移时自动搬运已有数据）",
+        "$link = \"$env:LocalAppData\\TubaWinUi3\"",
+        "$dst = \"$persist_dir\\AppData\\Local\\TubaWinUi3\"",
+        "if (Test-Path $link) {",
+        "    $item = Get-Item $link -Force",
+        "    if ($item.LinkType -eq 'Junction') {",
+        "        $old = $item.Target",
+        "        if ($old -ne $dst) { robocopy $old $dst /E /MOVE /R:1 /W:1 /NP /NFL /NDL /NJH /NJS | Out-Null }",
+        "        Remove-Item $link -Force",
+        "    } else {",
+        "        robocopy $link $dst /E /MOVE /R:1 /W:1 /NP /NFL /NDL /NJH /NJS | Out-Null",
+        "    }",
+        "}",
+        "New-Item -ItemType Junction -Path \"$env:LocalAppData\\TubaWinUi3\" -Target \"$persist_dir\\AppData\\Local\\TubaWinUi3\" | Out-Null"
+    ],
+    "pre_uninstall": [
+        "Stop-Process -Name 'TubaWinUi3' -Force -ErrorAction SilentlyContinue",
+        "if ((Test-Path \"$env:LocalAppData\\TubaWinUi3\") -and ((Get-Item \"$env:LocalAppData\\TubaWinUi3\" -Force).LinkType -eq 'Junction')) { Remove-Item \"$env:LocalAppData\\TubaWinUi3\" -Force }",
+        "# 运行 Inno Setup 卸载器",
+        "$unins = Get-ChildItem \"$dir\\app\" -Filter 'unins000.exe' -ErrorAction SilentlyContinue | Select-Object -First 1",
+        "if ($unins) { Start-Process $unins.FullName -ArgumentList @('/VerySilent', '/SuppressMsgBoxes', '/NoRestart', '/Force') -Wait }"
+    ],
+    "shortcuts": [
+        [
+            "app\\TubaWinUi3.exe",
+            "图吧工具箱WinUi3"
+        ]
+    ],
+    "persist": [
+        "AppData\\Local\\TubaWinUi3"
+    ],
+    "checkver": {
+        "github": {
+            "channel": "latest"
+        }
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/luolangaga/tubatools/releases/download/v$version/TubaWinUi3_Setup_$version_x64.exe"
+            },
+            "arm64": {
+                "url": "https://github.com/luolangaga/tubatools/releases/download/v$version/TubaWinUi3_Setup_$version_arm64.exe"
+            }
+        }
+    }
+}
