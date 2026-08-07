@@ -1,0 +1,64 @@
+{
+    "version": "2.5.2",
+    "description": "Windows 多网卡带宽叠加与网络加速工具，支持系统代理、多出口调度与 TUN 虚拟网卡模式 | Windows multi-NIC bandwidth aggregation and network acceleration tool with system proxy, multi-exit scheduling and TUN mode",
+    "homepage": "https://github.com/Hypostasis-Cat/HypoMux",
+    "license": "AGPL-3.0-only",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Hypostasis-Cat/HypoMux/releases/download/v2.5.2/HypoMux_Setup_2.5.2.exe",
+            "hash": "d2804d2ce155126a43d35589f38518523bcb0c0a93529e514a0206d63c4e07cc"
+        }
+    },
+    "pre_install": [
+        "# 关闭可能正在运行的旧版本进程，避免文件占用",
+        "Stop-Process -Name 'hypomux', 'hypomux-engine' -Force -ErrorAction SilentlyContinue",
+        "# 用 7-Zip 从官方签名 NSIS 安装器中静态提取便携所需的全部文件（不运行安装器，",
+        "# 因此不注册 HypoMuxCore 服务、不写任何注册表）：",
+        "#   hypomux.exe + bin\\{hypomux-engine.exe, sing-box.exe, wintun.dll, libcronet.dll}",
+        "Expand-7zipArchive -Path \"$dir\\HypoMux_Setup_$version.exe\" -DestinationPath $dir -Switches '-x!$PLUGINSDIR' -Removal",
+        "# 清理 NSIS 解包残留（*.nsis 脚本已被 Scoop 自动排除，这里清插件目录和卸载器桩）",
+        "Remove-Item \"$dir\\`$PLUGINSDIR\" -Recurse -Force -ErrorAction SilentlyContinue",
+        "Remove-Item \"$dir\\Uninstall.exe\" -Force -ErrorAction SilentlyContinue",
+        "# 统一主程序文件名（安装器内实际为 HypoMux.exe，NTFS 大小写不敏感，此行为兼容保险）",
+        "if (!(Test-Path \"$dir\\hypomux.exe\")) { Rename-Item \"$dir\\HypoMux.exe\" 'hypomux.exe' -ErrorAction SilentlyContinue }",
+        "# 生成便携启动器：仅对 HypoMux 自身进程注入 HYPOMUX_DATA_DIR，不写全局环境变量",
+        "Set-Content \"$dir\\start-portable.cmd\" -Value @('@echo off', 'set \"HYPOMUX_DATA_DIR=%~dp0data\"', 'start \"\" \"%~dp0hypomux.exe\"') -Encoding ASCII"
+    ],
+    "shortcuts": [
+        [
+            "start-portable.cmd",
+            "HypoMux"
+        ]
+    ],
+    "bin": [
+        [
+            "start-portable.cmd",
+            "hypomux"
+        ]
+    ],
+    "persist": [
+        "data"
+    ],
+    "pre_uninstall": [
+        "Stop-Process -Name 'hypomux', 'hypomux-engine' -Force -ErrorAction SilentlyContinue"
+    ],
+    "notes": [
+        "此为便携版：由官方 SignPath 签名的 NSIS 安装器经 7-Zip 静态提取重组而成，未经过安装器执行，",
+        "不注册 Windows 服务、不写注册表卸载项。",
+        "用户数据经 HYPOMUX_DATA_DIR 重定向到 data 目录（persist），随程序目录迁移。",
+        "请务必通过开始菜单的 HypoMux 快捷方式（或 hypomux shim）启动；",
+        "直接运行 hypomux.exe 会导致数据落入 %USERPROFILE%\\.hypomux。",
+        "TUN（虚拟网卡）模式按需弹出 UAC 提权，属正常行为；不依赖 Windows 服务。",
+        "需要系统已装 Microsoft Edge WebView2 Runtime（Win10/11 一般随 Edge 内置）。",
+        "请勿启用“开机自启”与应用内更新：前者写注册表 Run 键，后者会下载 NSIS 安装器装到 Program Files。",
+        "WebView2 缓存位于 %APPDATA%\\hypomux.exe，属缓存性质，可安全删除。"
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Hypostasis-Cat/HypoMux/releases/download/v$version/HypoMux_Setup_$version.exe"
+            }
+        }
+    }
+}
