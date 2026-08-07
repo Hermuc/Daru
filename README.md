@@ -1,4 +1,4 @@
-# hermuc-bucket
+# babylon
 
 本地自定义 Scoop bucket，用于收录主流 bucket（main / extras / versions / dorado 等）
 中搜索不到的小众 Windows 软件，主要面向 GitHub Releases 的便携包（zip / 7z / portable）。
@@ -6,7 +6,7 @@
 ## 目录结构
 
 ```
-hermuc-bucket/
+babylon/
 ├── .github/workflows/excavator.yml  # 自动检查上游新版本并更新 manifest
 ├── README.md          # 本说明文件
 └── bucket/            # ScoopInstaller/GithubActions 要求的嵌套结构
@@ -19,24 +19,24 @@ hermuc-bucket/
 
 ```powershell
 # 添加
-scoop bucket add hermuc-bucket https://github.com/Hermuc/hermuc-bucket.git
+scoop bucket add babylon https://github.com/Hermuc/babylon.git
 
 # 搜索 / 安装
 scoop search <name>
-scoop install hermuc-bucket/<name>
+scoop install babylon/<name>
 
 # 更新 bucket（scoop update 时自动 git pull；也可手动）
-git -C $env:SCOOP\buckets\hermuc-bucket pull
+git -C $env:SCOOP\buckets\babylon pull
 ```
 
 ## Manifest 命名规则
 
-- 每个软件一个 JSON 文件，文件名（不含 .json）即包名，安装时用 `hermuc-bucket/<包名>` 引用。
+- 每个软件一个 JSON 文件，文件名（不含 .json）即包名，安装时用 `babylon/<包名>` 引用。
 - 推荐使用小写、无空格的名称，如 `hypomux.json`；
 - 担心与主流 bucket 冲突时可使用 `Author.Software.json`（winget 风格）命名，
   例如 `bggRGjQaUbCoE.PiliPlus.json`。
 - 同名冲突时，`scoop bucket list` 中排序靠前（先添加）的 bucket 优先，
-  因此安装时建议始终带 bucket 前缀：`scoop install hermuc-bucket/<name>`。
+  因此安装时建议始终带 bucket 前缀：`scoop install babylon/<name>`。
 
 ## 注意事项
 
