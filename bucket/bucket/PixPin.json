@@ -1,0 +1,43 @@
+{
+    "version": "3.3.5.7",
+    "description": "一个功能强大使用简单的截图/贴图/录屏工具（便携版） | A powerful and simple screenshot/stick/screen recording tool (portable)",
+    "homepage": "https://pixpin.cn",
+    "license": {
+        "identifier": "Freemium",
+        "url": "https://pixpin.cn/docs/policy/tos_zh_CN.html"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://down.pixpin.cn/PixPin_win_3.3.5.7.zip",
+            "hash": "22eedc554a2e4cd1b1e1cdfc350189c797b2b1322d48066051c87c47848eb31b"
+        }
+    },
+    "extract_dir": "PixPin",
+    "conflicts": [
+        "PixPin.Beta",
+        "abyss/PixPin.PixPin",
+        "abyss/PixPin.PixPin.Beta"
+    ],
+    "bin": "PixPin.exe",
+    "shortcuts": [
+        [
+            "PixPin.exe",
+            "PixPin"
+        ]
+    ],
+    "notes": [
+        "便携版：程序数据保存在安装目录内，随 Scoop 目录迁移；",
+        "若从安装版迁移，旧数据位于 %LocalAppData%\\PixPin，可自行手动备份。"
+    ],
+    "checkver": {
+        "url": "https://pixpin.cn/download/",
+        "regex": "PixPin_win_([\\d.]+)\\.zip"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://down.pixpin.cn/PixPin_win_$version.zip"
+            }
+        }
+    }
+}
