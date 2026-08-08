@@ -3,6 +3,18 @@
     "description": "The 7-Zip derivative intended for the modern Windows experience",
     "homepage": "https://github.com/M2Team/NanaZip",
     "license": "MIT",
+    "notes": [
+        "babylon 定制版（相对 main bucket）变更说明：",
+        "1. 背景：main manifest 的 pre_install 会删除 *.msix 包文件，导致 MSIX 包身份丢失，",
+        "   依赖包身份声明的右键上下文菜单（windows.fileExplorerContextMenus）无法挂载，",
+        "   Win11 新旧菜单均不显示；注册表本身并无写入限制。",
+        "2. 修改：pre_install 保留当前架构的 .msix；post_install 通过 Add-AppxPackage 注册官方包",
+        "   （包身份 40174MouriNaruto.NanaZip），由系统包管理器写入 Shell 扩展注册表项；",
+        "   uninstaller 对称移除包，卸载后无注册表残留；scoop update 时先移除旧版本包再注册新版。",
+        "3. 便携文件（NanaZip.Universal.Console.exe 等）仍保留于 scoop 目录，7z/7zG shim 不受影响；",
+        "   开始菜单入口由 AppX 包提供（故不再创建 scoop shortcut）。",
+        "4. 若不再需要包注册（恢复 main 行为），删除 post_install/uninstaller 并在 pre_install 恢复删除 '*.msix' 即可。"
+    ],
     "architecture": {
         "64bit": {
             "url": "https://github.com/M2Team/NanaZip/releases/download/6.5.1800.0/NanaZip_6.5.1800.0.msixbundle#/dl.7z",
@@ -15,8 +27,15 @@
     },
     "pre_install": [
         "Expand-7zipArchive -Path \"$dir\\*$(switch ($architecture) { '64bit' { 'x64' } 'arm64' { 'arm64' } }).msix\"",
-        "Remove-Item -Path \"$dir\\*\" -Include '*.msix', 'Appx*', '?Content*', 'Code*' -Recurse -Force"
+        "Remove-Item -Path \"$dir\\*\" -Include 'Appx*', '?Content*', 'Code*', \"*$(switch ($architecture) { '64bit' { 'arm64' } 'arm64' { 'x64' } }).msix\" -Recurse -Force"
     ],
+    "post_install": [
+        "Get-AppxPackage -Name '40174MouriNaruto.NanaZip' | Remove-AppxPackage -ErrorAction SilentlyContinue",
+        "Add-AppxPackage -Path (Get-ChildItem -Path \"$dir\" -Filter '*.msix' | Select-Object -First 1 -ExpandProperty FullName) -ErrorAction Stop"
+    ],
+    "uninstaller": {
+        "script": "Get-AppxPackage -Name '40174MouriNaruto.NanaZip' | Remove-AppxPackage -ErrorAction SilentlyContinue"
+    },
     "bin": [
         [
             "NanaZip.Universal.Console.exe",
@@ -25,12 +44,6 @@
         [
             "NanaZip.Universal.Windows.exe",
             "7zG"
-        ]
-    ],
-    "shortcuts": [
-        [
-            "NanaZip.Modern.FileManager.exe",
-            "NanaZip"
         ]
     ],
     "checkver": "github",
