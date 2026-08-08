@@ -10,6 +10,10 @@
         }
     },
     "extract_dir": "dist\\Ghost-Downloader-3.dist",
+    "post_install": [
+        "# Scoop 更新后默认保留旧版本目录，此处自动清理（仅保留当前版本与 _*.old 备份）",
+        "Get-ChildItem -LiteralPath (Split-Path $dir -Parent) -Directory | Where-Object { $_.Name -ne (Split-Path $dir -Leaf) -and $_.Name -ne 'current' -and $_.Name -notmatch '^_' } | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue"
+    ],
     "notes": [
         "程序本体为绿色便携；运行时缓存位于 %AppData%\\GhostDownloader（退出时自动清理），",
         "用户设置若产生也存于该目录，不随程序目录迁移。"
