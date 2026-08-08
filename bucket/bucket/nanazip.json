@@ -1,9 +1,8 @@
-{
+﻿{
     "version": "6.5.1800.0",
     "description": "The 7-Zip derivative intended for the modern Windows experience",
     "homepage": "https://github.com/M2Team/NanaZip",
     "license": "MIT",
-    "depends": ["7zip"],
     "notes": [
         "babylon 定制版（相对 main bucket）变更说明：",
         "1. 背景：main manifest 的 pre_install 会删除 *.msix 包文件，导致 MSIX 包身份丢失，",
@@ -15,50 +14,56 @@
         "3. 便携文件（NanaZip.Universal.Console.exe 等）仍保留于 scoop 目录，7z/7zG shim 不受影响；",
         "   开始菜单入口由 AppX 包提供（故不再创建 scoop shortcut）。",
         "4. 若不再需要包注册（恢复 main 行为），删除 post_install/uninstaller 并在 pre_install 恢复删除 '*.msix' 即可。",
-        "5. 7z/7zG shim 改由 post_install 手动创建（不再声明于 bin）：更新 nanazip 时 rm_shims 无 bin 可删，",
-        "   旧 shim 得以保留至新包解压完成（use_external_7zip=true 下自身更新不再死锁），随后被新版本 shim 覆盖；",
-        "   代价：scoop reset nanazip 不会重建这两个 shim；若最终卸载 nanazip 后残留 7z/7zG shim（指向已删除目录），",
-        "   运行 'scoop reset 7zip' 即可恢复（前提：已安装官方 7zip），或手动删除 shims 目录下的 7z* 文件。",
-        "6. 首次安装自动依赖处理：manifest 声明 depends: ['7zip']，Scoop 会在安装 nanazip 前自动安装官方 7zip 作为自举依赖。",
-        "   安装完成后，post_install 检测 7zip 是否刚安装（current junction 时间在 10 分钟内）——若是则立即卸载（'用完即弃'），",
-        "   确保系统仅保留 NanaZip；独立安装的 7zip（超过 10 分钟）不会被误删。后续更新 nanazip 时，若 7zip 缺失，",
-        "   depends 会重新触发安装（随后再次卸载），shim 存活机制（见第 5 条）保证解压过程不中断。"
+        "5. 零 7zip 解包：URL 不带 '#/dl.7z' 片段，pre_install 改用 .NET 内置 [System.IO.Compression.ZipFile]",
+        "   原生嵌套解包（msixbundle 与 msix 均为 ZIP/OPC 结构），全程不依赖任何 7z 可执行文件——",
+        "   首装无自举死锁，自身更新时旧 shim 被 rm_shims 正常删除也不影响解包，因此 bin 恢复标准声明，",
+        "   scoop reset/uninstall 的 shim 生命周期回归 scoop 常规行为，不再需要 depends 7zip 或任何补丁逻辑。",
+        "6. use_external_7zip=true 下：安装/更新本应用全程不触碰 7z 代码路径；",
+        "   其他应用解压仍按 scoop 原逻辑走 Get-Command 7z（指向本应用的 shim 或 AppX 执行别名）。"
     ],
     "architecture": {
         "64bit": {
-            "url": "https://github.com/M2Team/NanaZip/releases/download/6.5.1800.0/NanaZip_6.5.1800.0.msixbundle#/dl.7z",
+            "url": "https://github.com/M2Team/NanaZip/releases/download/6.5.1800.0/NanaZip_6.5.1800.0.msixbundle",
             "hash": "0c2648eb0f52a52697fd9c3efa8fd292226c76817e0ce7f87444b91ed9593012"
         },
         "arm64": {
-            "url": "https://github.com/M2Team/NanaZip/releases/download/6.5.1800.0/NanaZip_6.5.1800.0.msixbundle#/dl.7z",
+            "url": "https://github.com/M2Team/NanaZip/releases/download/6.5.1800.0/NanaZip_6.5.1800.0.msixbundle",
             "hash": "0c2648eb0f52a52697fd9c3efa8fd292226c76817e0ce7f87444b91ed9593012"
         }
     },
+    "bin": [
+        [
+            "NanaZip.Universal.Console.exe",
+            "7z"
+        ],
+        [
+            "NanaZip.Universal.Windows.exe",
+            "7zG"
+        ]
+    ],
     "pre_install": [
-        "Expand-7zipArchive -Path \"$dir\\*$(switch ($architecture) { '64bit' { 'x64' } 'arm64' { 'arm64' } }).msix\"",
-        "Remove-Item -Path \"$dir\\*\" -Include 'Appx*', '?Content*', 'Code*', \"*$(switch ($architecture) { '64bit' { 'arm64' } 'arm64' { 'x64' } }).msix\" -Recurse -Force"
+        "# 零 7zip 解包：用 .NET 内置 ZipFile 替代 Expand-7zipArchive（msixbundle/msix 均为 ZIP/OPC 结构）",
+        "Add-Type -AssemblyName System.IO.Compression.FileSystem",
+        "$archShort = switch ($architecture) { '64bit' { 'x64' } 'arm64' { 'arm64' } }",
+        "$bundle = Get-ChildItem -Path \"$dir\" -Filter '*.msixbundle' | Select-Object -First 1",
+        "$bundleTmp = \"$dir\\__bundle_tmp\"",
+        "[System.IO.Compression.ZipFile]::ExtractToDirectory($bundle.FullName, $bundleTmp)",
+        "$msix = Get-ChildItem -Path $bundleTmp -Filter \"*_$archShort.msix\" | Select-Object -First 1",
+        "Move-Item -Path $msix.FullName -Destination \"$dir\" -Force",
+        "[System.IO.Compression.ZipFile]::ExtractToDirectory((Get-ChildItem -Path \"$dir\" -Filter '*.msix' | Select-Object -First 1).FullName, \"$dir\")",
+        "Remove-Item -Path $bundleTmp, $bundle.FullName -Recurse -Force",
+        "Remove-Item -Path \"$dir\\*\" -Include 'Appx*', '?Content*', 'Code*' -Recurse -Force"
     ],
     "post_install": [
         "Get-AppxPackage -Name '40174MouriNaruto.NanaZip' | Remove-AppxPackage -ErrorAction SilentlyContinue",
-        "Add-AppxPackage -Path (Get-ChildItem -Path \"$dir\" -Filter '*.msix' | Select-Object -First 1 -ExpandProperty FullName) -ErrorAction Stop",
-        "# 手动创建 7z/7zG shim（不声明于 bin：更新时 rm_shims 不会删除旧 shim，自身更新解压不中断；新版本安装后覆盖为最新路径）",
-        "shim \"$dir\\NanaZip.Universal.Console.exe\" $false '7z'",
-        "shim \"$dir\\NanaZip.Universal.Windows.exe\" $false '7zG'",
-        "# 首次安装/更新时：7zip 作为自举依赖自动安装；完成后若 7zip 刚安装（current junction 在 10 分钟内），",
-        "# 立即卸载实现“用完即弃”（避免误删独立安装的 7zip）",
-        "if (installed '7zip' $false) {",
-        "    $7zipJunction = Join-Path (appdir '7zip' $false) 'current'",
-        "    if ((Test-Path $7zipJunction) -and ((Get-Date) - (Get-Item $7zipJunction).LastWriteTime).TotalMinutes -lt 10) {",
-        "        scoop uninstall 7zip",
-        "    }",
-        "}"
+        "Add-AppxPackage -Path (Get-ChildItem -Path \"$dir\" -Filter '*.msix' | Select-Object -First 1 -ExpandProperty FullName) -ErrorAction Stop"
     ],
     "uninstaller": {
         "script": "Get-AppxPackage -Name '40174MouriNaruto.NanaZip' | Remove-AppxPackage -ErrorAction SilentlyContinue"
     },
     "checkver": "github",
     "autoupdate": {
-        "url": "https://github.com/M2Team/NanaZip/releases/download/$version/NanaZip_$version.msixbundle#/dl.7z",
+        "url": "https://github.com/M2Team/NanaZip/releases/download/$version/NanaZip_$version.msixbundle",
         "hash": {
             "url": "https://github.com/M2Team/NanaZip/releases/tag/$version",
             "regex": "(?s)$basename.*?$sha256"
