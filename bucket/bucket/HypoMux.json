@@ -1,12 +1,12 @@
 {
-    "version": "2.5.2",
+    "version": "2.5.3",
     "description": "Windows 多网卡带宽叠加与网络加速工具，支持系统代理、多出口调度与 TUN 虚拟网卡模式 | Windows multi-NIC bandwidth aggregation and network acceleration tool with system proxy, multi-exit scheduling and TUN mode",
     "homepage": "https://github.com/Hypostasis-Cat/HypoMux",
     "license": "AGPL-3.0-only",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/Hypostasis-Cat/HypoMux/releases/download/v2.5.2/HypoMux_Setup_2.5.2.exe",
-            "hash": "d2804d2ce155126a43d35589f38518523bcb0c0a93529e514a0206d63c4e07cc"
+            "url": "https://github.com/Hypostasis-Cat/HypoMux/releases/download/v2.5.3/HypoMux_Setup_2.5.3.exe",
+            "hash": "31d6869fe6034ca59c8ce5ced9dc12eaa65cf5555628fc2b360785e4ef48832e"
         }
     },
     "pre_install": [
@@ -36,12 +36,8 @@
             "hypomux"
         ]
     ],
-    "persist": [
-        "data"
-    ],
-    "pre_uninstall": [
-        "Stop-Process -Name 'hypomux', 'hypomux-engine' -Force -ErrorAction SilentlyContinue"
-    ],
+    "persist": "data",
+    "pre_uninstall": "Stop-Process -Name 'hypomux', 'hypomux-engine' -Force -ErrorAction SilentlyContinue",
     "notes": [
         "此为便携版：由官方 SignPath 签名的 NSIS 安装器经 7-Zip 静态提取重组而成，未经过安装器执行，",
         "不注册 Windows 服务、不写注册表卸载项。",
