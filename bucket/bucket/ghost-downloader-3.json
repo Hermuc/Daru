@@ -1,4 +1,4 @@
-{
+﻿{
     "version": "4.2.6",
     "description": "An AI-powered cross-platform file downloader built with Flutter-style UI on PySide6 | 基于 PySide6 的跨平台 AI 文件下载器",
     "homepage": "https://github.com/XiaoYouChR/Ghost-Downloader-3",
@@ -14,9 +14,13 @@
         "# Scoop 更新后默认保留旧版本目录，此处自动清理（仅保留当前版本与 _*.old 备份）",
         "Get-ChildItem -LiteralPath (Split-Path $dir -Parent) -Directory | Where-Object { $_.Name -ne (Split-Path $dir -Leaf) -and $_.Name -ne 'current' -and $_.Name -notmatch '^_' } | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue"
     ],
+    "persist": [
+        "GhostDownloader"
+    ],
     "notes": [
-        "程序本体为绿色便携；运行时缓存位于 %AppData%\\GhostDownloader（退出时自动清理），",
-        "用户设置若产生也存于该目录，不随程序目录迁移。"
+        "便携模式：exe 同级存在 GhostDownloader 目录（经 persist 链接至 Scoop\\persist\\ghost-downloader-3），",
+        "配置（UserConfig.json）、任务列表（tasks.jsonl）与组件（FFmpeg/M3U8DL/YtDlp）均存于该目录，",
+        "更新不丢失，可随程序目录整体迁移。"
     ],
     "shortcuts": [
         [
