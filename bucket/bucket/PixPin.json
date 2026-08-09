@@ -1,4 +1,4 @@
-{
+﻿{
     "version": "3.4.3.2",
     "description": "一个功能强大使用简单的截图/贴图/录屏工具（便携版） | A powerful and simple screenshot/stick/screen recording tool (portable)",
     "homepage": "https://pixpin.cn",
@@ -13,6 +13,17 @@
         }
     },
     "extract_dir": "PixPin",
+    "pre_install": [
+        "# 关闭正在运行的 PixPin，避免更新时文件占用导致解压/切换失败",
+        "Stop-Process -Name 'PixPin', 'PixPinAuxiliary' -Force -ErrorAction SilentlyContinue"
+    ],
+    "persist": [
+        "Config",
+        "Data",
+        "History",
+        "Contents",
+        "LocalStorage.data"
+    ],
     "conflicts": [
         "PixPin.Beta",
         "abyss/PixPin.PixPin",
@@ -26,7 +37,7 @@
         ]
     ],
     "notes": [
-        "便携版：程序数据保存在安装目录内，随 Scoop 目录迁移；",
+        "便携版：用户数据（Config/Data/History/Contents/LocalStorage.data）经 persist 保存至 Scoop\\persist\\PixPin，更新不丢失；",
         "若从安装版迁移，旧数据位于 %LocalAppData%\\PixPin，可自行手动备份。"
     ],
     "checkver": {
