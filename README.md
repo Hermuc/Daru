@@ -9,10 +9,10 @@
 babylon/
 ├── .github/workflows/excavator.yml  # 自动检查上游新版本并更新 manifest
 ├── README.md          # 本说明文件
-└── bucket/            # ScoopInstaller/GithubActions 要求的嵌套结构
-    └── bucket/        # 所有 manifest（JSON）必须放在此目录
-        ├── example-app.json
-        └── ghost-downloader-3.json
+└── bucket/            # 所有 manifest（JSON）放在此目录（与官方 bucket 一致的标准布局）
+    ├── example-app.json
+    ├── ghost-downloader-3.json
+    └── scripts/auto-update/  # 机器本地自动更新方案的存档备份（非 bucket 组成部分）
 ```
 
 ## 使用方法
