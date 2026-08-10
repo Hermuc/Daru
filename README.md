@@ -45,3 +45,19 @@ git -C $env:SCOOP\buckets\babylon pull
   请在 manifest 的 `description` 中标注 `[NOT PORTABLE]`，
   或考虑使用 nonportable 类型的处理方式（见 Scoop 官方 nonportable bucket）。
 - 本 bucket 的修改请在 git 中提交，便于版本管理与发布到其他机器。
+
+## 准入规则：更新成功后自动清理旧版本（必备能力）
+
+本机自动更新管线（`Scoop\auto-update.ps1`，由计划任务 ScoopAutoUpdate 调用）已在两步更新
+全部成功后自动执行 `scoop cleanup * -k`：删除各应用旧版本目录与过期下载缓存，
+保留 `current` 指向的当前版本与 `persist` 持久化数据，单个失败不阻塞流程。
+
+新增软件到本 bucket 时必须确认与该机制兼容（逐项检查，例外需在 PR/commit 说明中注明原因）：
+
+1. **用户数据必须经 `persist` 声明或存于 `current` 目录内**——cleanup 会直接删除旧版本目录，
+   存于旧版本目录且未 persist 的数据将在更新后被清除（参照 ghost-downloader-3、mpv-lazy 的 persist 写法）；
+2. **manifest 不得依赖旧版本目录存在**（如硬编码旧版本路径的 shim/post_install 逻辑）；
+3. 若应用自带旧版本清理逻辑（如 ghost-downloader-3 的 post_install），与全局 cleanup 并存无害，无需移除。
+
+注：当前 Scoop 版本不支持 `scoop config cleanup` 内建自动清理配置项，故该能力由更新脚本承担；
+若未来 Scoop 内建支持，可迁移至 `scoop config cleanup true` 并同步更新本节。
