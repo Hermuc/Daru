@@ -1,0 +1,43 @@
+﻿{
+    "version": "3.2.0.91",
+    "description": "果核看图：基于自研 CORE UI 框架（Direct2D）的轻量级极速看图软件，支持 90+ 格式与相机 RAW、ICC 色彩管理（便携版） | GuoheView: a fast lightweight image viewer with 90+ formats and RAW support (portable)",
+    "homepage": "https://pic.ghxi.com",
+    "license": {
+        "identifier": "Freeware",
+        "url": "https://pic.ghxi.com"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://rj.lovestu.com/api/v1/release-files/106/download#/dl.7z",
+            "hash": "0b8a0ce413f944b0cb5cb8ea079c80ffd42d61d1c5b23b118f0d8e8552a6567c"
+        }
+    },
+    "extract_dir": "GuoheViewPortable",
+    "pre_install": [
+        "# 关闭正在运行的 GuoheView，避免更新时文件占用导致解压/切换失败",
+        "Stop-Process -Name 'GuoheView', 'GuoheView-Updater' -Force -ErrorAction SilentlyContinue"
+    ],
+    "persist": [
+        "config.ini",
+        "plugins"
+    ],
+    "bin": "GuoheView.exe",
+    "shortcuts": [
+        [
+            "GuoheView.exe",
+            "GuoheView"
+        ]
+    ],
+    "notes": [
+        "便携版：portable.ini 为便携模式开关（勿删），用户设置 config.ini 与自装插件 plugins 经 persist 保存至 Scoop\\persist\\guoheview，更新不丢失；",
+        "解码器/OCR 插件从官网 https://pic.ghxi.com/download 下载后放入 plugins\\decoder 或 plugins\\ocr 即可；",
+        "当前版本官方 MD5: f9586da58abdb3e755c5932c82d287b6（供人工核对）。",
+        "注意：官方下载走 release-files API，每个版本的直链文件 ID 不同，故未配置 autoupdate；",
+        "checkver 检测到新版本后，请从 https://rj.lovestu.com/download/gh_view 的 JSON 中取『便携版 .7z』的新 release-files ID 与哈希，手动更新 manifest。"
+    ],
+    "checkver": {
+        "url": "https://rj.lovestu.com/download/gh_view",
+        "regex": "\"version\":\"([\\d.]+)\",\"version_code\":(\\d+)",
+        "replace": "$1.$2"
+    }
+}
