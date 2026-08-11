@@ -31,13 +31,19 @@
     "notes": [
         "便携版：portable.ini 为便携模式开关（勿删），用户设置 config.ini 与自装插件 plugins 经 persist 保存至 Scoop\\persist\\guoheview，更新不丢失；",
         "解码器/OCR 插件从官网 https://pic.ghxi.com/download 下载后放入 plugins\\decoder 或 plugins\\ocr 即可；",
-        "当前版本官方 MD5: f9586da58abdb3e755c5932c82d287b6（供人工核对）。",
-        "注意：官方下载走 release-files API，每个版本的直链文件 ID 不同，故未配置 autoupdate；",
-        "checkver 检测到新版本后，请从 https://rj.lovestu.com/download/gh_view 的 JSON 中取『便携版 .7z』的新 release-files ID 与哈希，手动更新 manifest。"
+        "自动更新：checkver 正则从官方 release API 捕获『便携版 .7z』的 release-files ID（$match3），autoupdate 据此构造直链，哈希由 Scoop 下载新包后自动计算；",
+        "若官方 API 的 JSON 字段顺序变更导致 checkver 匹配失败，请手动从 https://rj.lovestu.com/download/gh_view 取新 ID 与哈希修正 manifest。"
     ],
     "checkver": {
         "url": "https://rj.lovestu.com/download/gh_view",
-        "regex": "\"version\":\"([\\d.]+)\",\"version_code\":(\\d+)",
+        "regex": "\"version\":\"([\\d.]+)\",\"version_code\":(\\d+)[\\s\\S]*?\"id\":(\\d+),\"name\":\"[^\"]*\\.7z\"",
         "replace": "$1.$2"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://rj.lovestu.com/api/v1/release-files/$match3/download#/dl.7z"
+            }
+        }
     }
 }
