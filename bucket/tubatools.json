@@ -1,5 +1,5 @@
-{
-    "version": "1.5.0",
+﻿{
+    "version": "1.5.1",
     "description": "图吧工具箱 winUI3 版，现代化的 PC 硬件检测与系统维护工具集 | Modern toolkit for PC hardware detection and system maintenance",
     "homepage": "https://tubawinui3.cn",
     "license": {
@@ -7,12 +7,12 @@
     },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/luolangaga/tubatools/releases/download/v1.5.0/TubaWinUi3_Portable_1.5.0_x64.zip",
-            "hash": "fa700d8e256678e90339d34d371a964f2d6a4f81e731ca262396ba14efaff4c1"
+            "url": "https://github.com/luolangaga/tubatools/releases/download/v1.5.1/TubaWinUi3_Portable_1.5.1_x64.zip",
+            "hash": "99f1b66ee568911f189c8a2e783d64b02aaed9ec466253a0c306863132eac6c1"
         },
         "arm64": {
-            "url": "https://github.com/luolangaga/tubatools/releases/download/v1.5.0/TubaWinUi3_Portable_1.5.0_arm64.zip",
-            "hash": "c6b6f9431dca8fd917ddf5b37bc6605bdde19df0eeeb2c267bf71b2540d47d3f"
+            "url": "https://github.com/luolangaga/tubatools/releases/download/v1.5.1/TubaWinUi3_Portable_1.5.1_arm64.zip",
+            "hash": "10af1a3e8bf277a6c7717e67ff472ef93fc5c1efe720f346dcc0e6c476d19572"
         }
     },
     "extract_to": "app",
@@ -25,7 +25,7 @@
         "    if ($item.LinkType -eq 'Junction') {",
         "        $old = $item.Target",
         "        if ($old -ne $dst) { robocopy $old $dst /E /MOVE /R:1 /W:1 /NP /NFL /NDL /NJH /NJS | Out-Null }",
-        "        Remove-Item $link -Force",
+        "        Remove-Item $link -Force -Confirm:$false",
         "    } else {",
         "        robocopy $link $dst /E /MOVE /R:1 /W:1 /NP /NFL /NDL /NJH /NJS | Out-Null",
         "    }",
@@ -34,7 +34,7 @@
     ],
     "pre_uninstall": [
         "Stop-Process -Name 'TubaWinUi3' -Force -ErrorAction SilentlyContinue",
-        "if ((Test-Path \"$env:LocalAppData\\TubaWinUi3\") -and ((Get-Item \"$env:LocalAppData\\TubaWinUi3\" -Force).LinkType -eq 'Junction')) { Remove-Item \"$env:LocalAppData\\TubaWinUi3\" -Force }"
+        "if ((Test-Path \"$env:LocalAppData\\TubaWinUi3\") -and ((Get-Item \"$env:LocalAppData\\TubaWinUi3\" -Force).LinkType -eq 'Junction')) { Remove-Item \"$env:LocalAppData\\TubaWinUi3\" -Force -Confirm:$false }"
     ],
     "bin": [
         [
@@ -52,9 +52,7 @@
         "AppData\\Local\\TubaWinUi3"
     ],
     "checkver": {
-        "github": {
-            "channel": "latest"
-        }
+        "github": "https://github.com/luolangaga/tubatools"
     },
     "autoupdate": {
         "architecture": {
