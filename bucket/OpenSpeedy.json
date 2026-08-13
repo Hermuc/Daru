@@ -1,4 +1,4 @@
-{
+﻿{
     "version": "3.3.8",
     "description": "一款开源免费的游戏变速工具，助您突破帧率限制，带来更流畅丝滑的游戏加速体验 | An open-source and free game speed tool that helps you break frame rate limitations and provides a smoother, silkier gaming acceleration experience",
     "homepage": "https://github.com/game1024/OpenSpeedy",
@@ -21,7 +21,7 @@
         "    if ($item.LinkType -eq 'Junction') {",
         "        $old = $item.Target",
         "        if ($old -ne $dst) { robocopy $old $dst /E /MOVE /R:1 /W:1 /NP /NFL /NDL /NJH /NJS | Out-Null }",
-        "        Remove-Item $link -Force",
+        "        Remove-Item $link -Force -Confirm:$false",
         "    } else {",
         "        robocopy $link $dst /E /MOVE /R:1 /W:1 /NP /NFL /NDL /NJH /NJS | Out-Null",
         "    }",
@@ -32,7 +32,7 @@
     ],
     "pre_uninstall": [
         "Stop-Process -Name 'OpenSpeedy' -Force -ErrorAction SilentlyContinue",
-        "if ((Test-Path \"$env:AppData\\com.game1024.openspeedy\") -and ((Get-Item \"$env:AppData\\com.game1024.openspeedy\" -Force).LinkType -eq 'Junction')) { Remove-Item \"$env:AppData\\com.game1024.openspeedy\" -Force }"
+        "if ((Test-Path \"$env:AppData\\com.game1024.openspeedy\") -and ((Get-Item \"$env:AppData\\com.game1024.openspeedy\" -Force).LinkType -eq 'Junction')) { Remove-Item \"$env:AppData\\com.game1024.openspeedy\" -Force -Confirm:$false }"
     ],
     "cleanup": "$env:LocalAppData\\com.game1024.openspeedy",
     "shortcuts": [
@@ -45,9 +45,7 @@
         "AppData\\Roaming\\com.game1024.openspeedy"
     ],
     "checkver": {
-        "github": {
-            "channel": "latest"
-        }
+        "github": "https://github.com/game1024/OpenSpeedy"
     },
     "autoupdate": {
         "architecture": {
