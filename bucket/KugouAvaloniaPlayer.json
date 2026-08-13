@@ -1,0 +1,40 @@
+﻿{
+    "version": "3.4.1",
+    "description": "酷狗音乐第三方客户端：基于 .NET 10 与 Avalonia 的跨平台酷狗音乐播放器，支持歌词显示、无损播放等（便携版） | KugouAvaloniaPlayer: an Avalonia-based cross-platform Kugou music client (portable)",
+    "homepage": "https://github.com/Linsxyx/KugouMusic.NET",
+    "license": {
+        "identifier": "MIT",
+        "url": "https://github.com/Linsxyx/KugouMusic.NET"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Linsxyx/KugouMusic.NET/releases/download/v3.4.1/KugouAvaloniaPlayer-win-x64.zip",
+            "hash": "e1776d6e3a7f0619077e15ec53bdcb1336ecf40cfdfbf765f481bbd6c3177767"
+        }
+    },
+    "extract_dir": "current",
+    "pre_install": [
+        "# 关闭正在运行的播放器与桌面歌词组件，避免更新时文件占用导致解压/切换失败",
+        "Stop-Process -Name 'KugouAvaloniaPlayer', 'KugouTaskbarLyrics' -Force -ErrorAction SilentlyContinue"
+    ],
+    "bin": "KugouAvaloniaPlayer.exe",
+    "shortcuts": [
+        [
+            "KugouAvaloniaPlayer.exe",
+            "KugouAvaloniaPlayer"
+        ]
+    ],
+    "notes": [
+        "便携版：包内 .portable 标记禁用自动更新（Scoop 负责更新），包内 Update.exe 与 packages 目录不被提取，属正常现象；",
+        "桌面歌词组件 KugouTaskbarLyrics.exe 随主程序目录提供，可手动创建快捷方式；",
+        "自动更新：checkver 走 GitHub release API，URL 由 v$version 直接推导，哈希由 Scoop 下载新包后自动计算。"
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Linsxyx/KugouMusic.NET/releases/download/v$version/KugouAvaloniaPlayer-win-x64.zip"
+            }
+        }
+    }
+}
