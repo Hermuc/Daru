@@ -1,4 +1,4 @@
-{
+﻿{
     "version": "2.2.7",
     "description": "基于自定义规则的番剧采集 APP | A custom rule based anime collection APP",
     "homepage": "https://kazumi.app",
@@ -21,7 +21,7 @@
         "    if ($item.LinkType -eq 'Junction') {",
         "        $old = $item.Target",
         "        if ($old -ne $dst) { robocopy $old $dst /E /MOVE /R:1 /W:1 /NP /NFL /NDL /NJH /NJS | Out-Null }",
-        "        Remove-Item $link -Force",
+        "        (Get-Item $link -Force).Delete()",
         "    } else {",
         "        robocopy $link $dst /E /MOVE /R:1 /W:1 /NP /NFL /NDL /NJH /NJS | Out-Null",
         "    }",
@@ -30,7 +30,7 @@
     "post_install": "New-Item -ItemType Junction -Path \"$env:AppData\\com.example\\kazumi\" -Target \"$persist_dir\\AppData\\Roaming\\com.example\\kazumi\" | Out-Null",
     "pre_uninstall": [
         "Stop-Process -Name 'kazumi' -Force -ErrorAction SilentlyContinue",
-        "if ((Test-Path \"$env:AppData\\com.example\\kazumi\") -and ((Get-Item \"$env:AppData\\com.example\\kazumi\" -Force).LinkType -eq 'Junction')) { Remove-Item \"$env:AppData\\com.example\\kazumi\" -Force }"
+        "if ((Test-Path \"$env:AppData\\com.example\\kazumi\") -and ((Get-Item \"$env:AppData\\com.example\\kazumi\" -Force).LinkType -eq 'Junction')) { (Get-Item \"$env:AppData\\com.example\\kazumi\" -Force).Delete() }"
     ],
     "shortcuts": [
         [

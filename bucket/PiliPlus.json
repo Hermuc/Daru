@@ -1,4 +1,4 @@
-{
+﻿{
     "version": "2.1.0",
     "description": "使用 Flutter 开发的 BiliBili 第三方客户端 | A third-party BiliBili client developed using Flutter",
     "homepage": "https://github.com/bggRGjQaUbCoE/PiliPlus",
@@ -22,7 +22,7 @@
         "    if ($item.LinkType -eq 'Junction') {",
         "        $old = $item.Target",
         "        if ($old -ne $dst) { robocopy $old $dst /E /MOVE /R:1 /W:1 /NP /NFL /NDL /NJH /NJS | Out-Null }",
-        "        Remove-Item $link -Force",
+        "        (Get-Item $link -Force).Delete()",
         "    } else {",
         "        robocopy $link $dst /E /MOVE /R:1 /W:1 /NP /NFL /NDL /NJH /NJS | Out-Null",
         "    }",
@@ -33,7 +33,7 @@
     ],
     "pre_uninstall": [
         "Stop-Process -Name 'piliplus' -Force -ErrorAction SilentlyContinue",
-        "if ((Test-Path \"$env:AppData\\com.example\\piliplus\") -and ((Get-Item \"$env:AppData\\com.example\\piliplus\" -Force).LinkType -eq 'Junction')) { Remove-Item \"$env:AppData\\com.example\\piliplus\" -Force }"
+        "if ((Test-Path \"$env:AppData\\com.example\\piliplus\") -and ((Get-Item \"$env:AppData\\com.example\\piliplus\" -Force).LinkType -eq 'Junction')) { (Get-Item \"$env:AppData\\com.example\\piliplus\" -Force).Delete() }"
     ],
     "cleanup": "$env:LocalAppData\\com.example\\piliplus",
     "shortcuts": [
