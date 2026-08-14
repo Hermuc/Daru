@@ -1,0 +1,46 @@
+﻿{
+    "version": "0.8.94",
+    "description": "A multi-platform proxy client based on ClashMeta, simple and easy to use, open-source and ad-free.",
+    "homepage": "https://github.com/chen08209/FlClash",
+    "license": {
+        "identifier": "GPL-3.0-only",
+        "url": "https://github.com/chen08209/FlClash/blob/main/LICENSE"
+    },
+    "notes": [
+        "Once you set up TUN mode successfully, the older versions of FlClash may be hard to remove by running 'scoop cleanup FlClash'.",
+        "In that case, try running the following command with privilege:",
+        "sc.exe config FlClashHelperService binPath=\"$dir\\FlClashHelperService.exe\"",
+        "Also, FlClash may be hard to uninstall due to the running FlClashHelperService; stop it first with 'sc.exe stop FlClashHelperService' (privilege required)."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/chen08209/FlClash/releases/download/v0.8.94/FlClash-0.8.94-windows-amd64.zip",
+            "hash": "9d43f4360e572475779c776963f7d47916e2d381e7e011161f3d8986b8c8f659"
+        },
+        "arm64": {
+            "url": "https://github.com/chen08209/FlClash/releases/download/v0.8.94/FlClash-0.8.94-windows-arm64.zip",
+            "hash": "7caebafbfd848f11d15e4da75aebfe77dd55c27378ea9bcc42681322bba966c8"
+        }
+    },
+    "bin": "FlClash.exe",
+    "shortcuts": [
+        [
+            "FlClash.exe",
+            "FlClash"
+        ]
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/chen08209/FlClash/releases/download/v$version/FlClash-$version-windows-amd64.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/chen08209/FlClash/releases/download/v$version/FlClash-$version-windows-arm64.zip"
+            }
+        },
+        "hash": {
+            "url": "$baseurl/SHA256SUMS"
+        }
+    }
+}
