@@ -1,0 +1,63 @@
+﻿{
+    "version": "4.1.12",
+    "description": "Free messaging and calling app by Tencent (portable extraction of the official installer)",
+    "homepage": "https://pc.weixin.qq.com/",
+    "license": {
+        "identifier": "Proprietary",
+        "url": "https://www.wechat.com/en/service_terms.html"
+    },
+    "notes": [
+        "This manifest extracts the official NSIS installer into a portable layout; no admin rights are needed.",
+        "Chat file storage is redirected to $persist_dir (xwechat_files). Account settings/cache remain at %APPDATA%\\Tencent\\xwechat.",
+        "To avoid the in-app self-updater bypassing Scoop version management, disable auto-update in WeChat settings.",
+        "Extraction uses Scoop's 7zip helper; with 'scoop config use_external_7zip true' an external 7z.exe on PATH is used.",
+        "Official releases do not provide hash files, so after autoupdate detects a new version the hash must be filled in manually."
+    ],
+    "url": "https://dldir1v6.qq.com/weixin/Universal/Windows/WeChatWin_4.1.12.exe#/dl.7z",
+    "hash": "e39cdd9eb4625efc6b9d6494778dfecbb2e1845aecd94f5076634104b100082d",
+    "pre_install": [
+        "Stop-Process -Name 'Weixin', 'WeChat', 'WeixinUpdate', 'WeixinExt' -Force -ErrorAction SilentlyContinue"
+    ],
+    "installer": {
+        "script": [
+            "Expand-7zipArchive \"$dir\\install.7z\" \"$dir\" -Removal",
+            "Remove-Item \"$dir\\`$*\", \"$dir\\Uninst*\" -Force -Recurse",
+            "Remove-Item -LiteralPath \"$dir\\[NSIS].nsi\" -Force -ErrorAction SilentlyContinue",
+            "Remove-Item \"$dir\\*\\WetypeInstaller.exe\" -Force -ErrorAction SilentlyContinue",
+            "$config_path = \"$env:APPDATA\\Tencent\\xwechat\\config\"",
+            "ensure \"$config_path\" | Out-Null",
+            "Set-Content -NoNewline -Path \"$config_path\\51a1fffea11325a1e4104c6b3de47af7.ini\" -Value \"$persist_dir\"",
+            "$reg_path = \"HKCU:Software\\Tencent\\Wexin\"",
+            "if (!(Test-Path \"$reg_path\")) { New-Item -Path \"$reg_path\" -Type Directory -Force | Out-Null }",
+            "New-ItemProperty -Path $reg_path -Name \"FileSavePath\" -Value \"$persist_dir\" -Force | Out-Null",
+            "New-ItemProperty -Path $reg_path -Name \"InstallPath\" -Value \"$dir\" -Force | Out-Null"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "Remove-Item -Path \"$env:APPDATA\\Tencent\\xwechat\\config\\51a1fffea11325a1e4104c6b3de47af7.ini\" -Force -ErrorAction SilentlyContinue",
+            "Remove-ItemProperty -Path 'HKCU:Software\\Tencent\\Wexin' -Name 'FileSavePath' -Force -ErrorAction SilentlyContinue",
+            "Remove-ItemProperty -Path 'HKCU:Software\\Tencent\\Wexin' -Name 'InstallPath' -Force -ErrorAction SilentlyContinue"
+        ]
+    },
+    "bin": [
+        [
+            "Weixin.exe",
+            "wechat"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "Weixin.exe",
+            "WeChat"
+        ]
+    ],
+    "persist": "xwechat_files",
+    "checkver": {
+        "url": "https://pc.weixin.qq.com/",
+        "regex": "WeChatWin_([\\d.]+)\\.exe"
+    },
+    "autoupdate": {
+        "url": "https://dldir1v6.qq.com/weixin/Universal/Windows/WeChatWin_$version.exe#/dl.7z"
+    }
+}
