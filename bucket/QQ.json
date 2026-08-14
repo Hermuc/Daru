@@ -11,6 +11,8 @@
         "Chat data (nt_qq) is redirected to $persist_dir\\Tencent Files via a junction at %USERPROFILE%\\Documents\\Tencent Files. Account settings/cache remain at %APPDATA%\\Tencent\\QQ.",
         "The junction is removed on uninstall, but the data under $persist_dir is kept.",
         "If %USERPROFILE%\\Documents\\Tencent Files already exists as a real folder (e.g. from an installed QQ), the junction is skipped and data stays in place.",
+        "Account settings/cache (%APPDATA%\\Tencent\\QQ and QQNT) are redirected to $persist_dir\\appdata_QQ via junctions, so they survive OS reinstalls.",
+        "Existing data is migrated automatically on install; the original folder is kept as .bak-<timestamp> for rollback - delete it manually after verifying.",
         "To avoid the in-app self-updater bypassing Scoop version management, disable auto-update in QQ settings.",
         "Official releases do not provide hash files, so after autoupdate detects a new version the hash must be filled in manually."
     ],
@@ -35,6 +37,28 @@
     "installer": {
         "script": [
             "Remove-Item \"$dir\\Uninstall.exe\" -Force -ErrorAction SilentlyContinue",
+            "function Ensure-LinkedData {",
+            "    param($Target, $Link)",
+            "    if (Test-Path $Link) {",
+            "        $item = Get-Item $Link -Force",
+            "        if ($item.LinkType -eq 'Junction') { Write-Host \"Already linked: $Link\"; return }",
+            "        $bak = \"$Link.bak-$([DateTime]::Now.ToString('yyyyMMddHHmmss'))\"",
+            "        New-Item -ItemType Directory -Path $Target -Force | Out-Null",
+            "        Write-Host \"Migrating existing data: $Link -> $Target\"",
+            "        robocopy $Link $Target /E /COPY:DAT /DCOPY:DAT /R:2 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+            "        if ($LASTEXITCODE -lt 8) {",
+            "            Rename-Item -Path $Link -NewName (Split-Path $bak -Leaf) -Force",
+            "            New-Item -ItemType Junction -Path $Link -Target $Target | Out-Null",
+            "            Write-Host \"Data migrated. Original kept at $bak - delete it manually after verifying.\"",
+            "        } else { Write-Host \"WARNING: migration failed (robocopy $LASTEXITCODE); junction skipped, data kept in place.\" }",
+            "        return",
+            "    }",
+            "    New-Item -ItemType Directory -Path $Target -Force | Out-Null",
+            "    New-Item -ItemType Junction -Path $Link -Target $Target | Out-Null",
+            "    Write-Host \"Linked: $Link -> $Target\"",
+            "}",
+            "Ensure-LinkedData \"$persist_dir\\appdata_QQ\" \"$env:APPDATA\\Tencent\\QQ\"",
+            "Ensure-LinkedData \"$persist_dir\\appdata_QQNT\" \"$env:APPDATA\\Tencent\\QQNT\"",
             "$data_dir = \"$env:USERPROFILE\\Documents\\Tencent Files\"",
             "$persist_data = \"$persist_dir\\Tencent Files\"",
             "if (!(Test-Path $persist_data)) { New-Item -ItemType Directory -Path $persist_data -Force | Out-Null }",
@@ -44,8 +68,10 @@
     },
     "uninstaller": {
         "script": [
+            "$links = @(\"$env:APPDATA\\Tencent\\QQ\", \"$env:APPDATA\\Tencent\\QQNT\")",
+            "foreach ($l in $links) { if ((Test-Path $l) -and (Get-Item $l -Force).LinkType -eq 'Junction') { (Get-Item $l -Force).Delete() } }",
             "$data_dir = \"$env:USERPROFILE\\Documents\\Tencent Files\"",
-            "if ((Test-Path $data_dir) -and (Get-Item $data_dir).LinkType -eq 'Junction') { Remove-Item $data_dir -Force }"
+            "if ((Test-Path $data_dir) -and (Get-Item $data_dir).LinkType -eq 'Junction') { (Get-Item $data_dir).Delete() }"
         ]
     },
     "bin": [
