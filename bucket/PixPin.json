@@ -17,6 +17,14 @@
         "# 关闭正在运行的 PixPin，避免更新时文件占用导致解压/切换失败",
         "Stop-Process -Name 'PixPin', 'PixPinAuxiliary' -Force -ErrorAction SilentlyContinue"
     ],
+    "post_install": [
+        "# 借鉴 dorado/pixpin：写入 PixPinConfig.json 禁用应用内自动更新（仅首次安装时写入，已有配置则跳过）",
+        "$configPath = \"$persist_dir\\Config\\PixPinConfig.json\"",
+        "if (Test-Path $configPath) { return }",
+        "$timestamp = [DateTimeOffset]::Now.ToUnixTimeSeconds()",
+        "$content = '{\"System.Update.UpgradeMode#s.win\":{\"t\":' + $timestamp + ',\"v\":0}}'",
+        "$content | Set-Content -Path $configPath -Encoding UTF8"
+    ],
     "persist": [
         "Config",
         "Data",
@@ -38,7 +46,8 @@
     ],
     "notes": [
         "便携版：用户数据（Config/Data/History/Contents/LocalStorage.data）经 persist 保存至 Scoop\\persist\\PixPin，更新不丢失；",
-        "若从安装版迁移，旧数据位于 %LocalAppData%\\PixPin，可自行手动备份。"
+        "若从安装版迁移，旧数据位于 %LocalAppData%\\PixPin，可自行手动备份。",
+        "首次安装时自动写入 PixPinConfig.json 禁用应用内自动更新（UpgradeMode=0，借鉴 dorado）；已有配置则保持不动。"
     ],
     "checkver": {
         "url": "https://pixpin.cn/download/",
