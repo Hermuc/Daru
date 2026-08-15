@@ -61,7 +61,7 @@ babylon/
 2. **`Remove-Item` 必须带 `-Confirm:$false`**——非交互环境（定时任务、自动更新）会因确认提示挂起
 3. **删除 junction 用 `(Get-Item $path -Force).Delete()`**——PS 5.1 的 `Remove-Item` 删 junction 抛 NullReferenceException
 4. 注册表共享视图（`HKLM\SOFTWARE` 与 `WOW6432Node` 指向同一数据）：第二处删除加 `-ErrorAction SilentlyContinue`；脚本慎用 `$ErrorActionPreference='Stop'`，避免单点失败中断后续步骤
-5. **无硬编码路径**：只使用 `$dir` / `$version` / `$persist_dir` 等变量；`bin` / `shortcuts` 一律用 current 相对路径（硬编码绝对路径会在版本更新后变死链）
+5. **无硬编码路径**：只使用 `$dir` / `$version` / `$persist_dir` 等变量；`bin` / `shortcuts` 只写 current 内的相对路径（文件名），不写绝对路径（版本更新后绝对路径会变死链）
 6. 官方安装器提取类（QQ / WeChat 等）：删除 Uninstall.exe 等卸载器，防止误点触发官方卸载流程；notes 提示用户关闭应用内自更新，避免绕过 Scoop 版本管理
 
 ### 数据持久化（本仓库核心能力）
@@ -71,23 +71,23 @@ babylon/
    - 链接不存在 → 直接创建 junction 指向 persist 目录
    - 已是 junction → 幂等跳过
    - 真实目录有数据 → `robocopy /E /COPY:DAT /DCOPY:DAT` 迁移（勿用 `/COPYALL`，ACL 权限会失败）→ 原目录改名 `.bak-<时间戳>` 作回滚点 → 建 junction
-3. uninstaller 对称处理：`.Delete()` 删 junction，保留 persist 数据
+3. pre_uninstall / uninstaller 对称处理：`.Delete()` 删 junction，保留 persist 数据
 4. 效果：首次安装自动迁移用户既有数据；重装系统后 `scoop install` 即恢复登录态
 
 ### 安装包解包
 
-1. 自解压 exe（7z SFX）：url 后加 `#/dl.7z`，交 7z 解包
+1. exe 安装包（含 7z SFX 自解压，如 QQ / WeChat / mpv-lazy）：url 后加 `#/dl.7z`，交 7z 解包（nanazip 特例除外）
 2. NSIS 安装器（微信等）：7-Zip **静态提取**核心文件，不执行安装器（不注册服务、不写注册表）
 3. Velopack 结构：压缩包根目录只有 stub 时，设 `extract_dir` 指向实际可执行目录
-4. 7z 解包依赖：`depends=7zip` 或依赖本机 7z（nanazip）可用
+4. 解包统一用 `Expand-7zipArchive`（scoop 内置，无需 `depends` 字段）；nanazip 为特例：零 7zip，用 .NET `ZipFile` 原生解包（URL 不带 `#/dl.7z`）
 
 ### checkver 与 autoupdate
 
 1. GitHub Releases 可用简写 `"checkver": "github"`
 2. 官方提供 SHA256SUMS 时：`hash.url: $baseurl/SHA256SUMS` 自动取哈希；无哈希文件需人工补全
 3. **改写 checkver 前必须核查 autoupdate 是否引用正则命名捕获组（`$match*`）**——`github` 简写形式无自定义捕获组，改写会使自动更新 URL 失效
-4. 双架构（x64 / arm64）提供两个 download 条目
-5. 更新链路必须可验证：`scoop checkver babylon/<包名>` 能查到新版本
+4. 多架构（x86 / x64 / arm64）各提供独立 download 条目
+5. 更新链路必须可验证：`scoop checkver <包名>`（不带 bucket 前缀；本机新版 Scoop 已移除 checkver，可用 `scoop info babylon/<包名>` 核对 manifest）
 
 ### 兼容自动清理（必备能力）
 
@@ -101,9 +101,10 @@ babylon/
 
 ```powershell
 # 1) JSON 合法性（含 BOM 检查）
-Get-Content bucket/<包名>.json -Raw | ConvertFrom-Json
-# 2) 版本检测链路
-scoop checkver babylon/<包名>
+Get-Content bucket/<包名>.json -Raw -Encoding UTF8 | ConvertFrom-Json
+# 2) 版本检测链路（不带前缀；本机新版 Scoop 无 checkver 时改用 scoop info）
+scoop checkver <包名>
+scoop info babylon/<包名>
 # 3) 实机安装测试（可选，会实际安装）
 scoop install babylon/<包名>
 ```
