@@ -1,63 +1,64 @@
-# babylon
+﻿# babylon
 
-本地自定义 Scoop bucket，用于收录主流 bucket（main / extras / versions / dorado 等）
-中搜索不到的小众 Windows 软件，主要面向 GitHub Releases 的便携包（zip / 7z / portable）。
+本地自定义 Scoop bucket，收录主流 bucket 中搜索不到的小众 Windows 软件，以 GitHub Releases 的绿色便携包（zip / 7z）为主。
+
+## 快速开始
+
+前置条件：已安装 Scoop 与 Git（Git 可用 `winget install Git.Git` 安装）。
+
+```powershell
+# 1. 添加 bucket
+scoop bucket add babylon https://github.com/Hermuc/babylon.git
+
+# 2. 搜索软件
+scoop search <关键字>
+
+# 3. 安装（带 babylon/ 前缀，避免与主流 bucket 同名包冲突）
+scoop install babylon/<包名>
+
+# 4. 更新（自动同步所有 bucket）
+scoop update
+```
+
+当前收录的软件清单见 `bucket/` 目录（每个 .json 即一个软件），也可用 `scoop search` 查询。
+
+若本机已存在同名 bucket，可换名导入：
+
+```powershell
+scoop bucket add bbn https://github.com/Hermuc/babylon.git   # 之后用 bbn/<包名> 引用
+```
 
 ## 目录结构
 
 ```
 babylon/
-├── .github/workflows/excavator.yml  # 自动检查上游新版本并更新 manifest
-├── README.md          # 本说明文件
-└── bucket/            # 所有 manifest（JSON）放在此目录（与官方 bucket 一致的标准布局）
-    ├── example-app.json
-    ├── ghost-downloader-3.json
-    └── scripts/auto-update/  # 机器本地自动更新方案的存档备份（非 bucket 组成部分）
+├── bucket/            # 全部 manifest（每个软件一个 .json）
+│   └── scripts/       # 辅助脚本（部分为维护者本地方案存档，普通用户无需关注）
+├── .github/           # 自动检查上游新版本的 GitHub Actions
+└── README.md
 ```
 
-## 使用方法
+## 收录原则
 
-```powershell
-# 添加
-scoop bucket add babylon https://github.com/Hermuc/babylon.git
+- 仅收录绿色便携软件（解压即可运行）；无法便携时须在 description 标注 `[NOT PORTABLE]` 并说明原因
+- 用户数据（设置、登录态等）必须经 `persist` 声明或存放于 `current` 目录内，重装系统后不丢失
+- 依赖运行库（如 WebView2、VC++）时，在 notes / description 中说明
 
-# 搜索 / 安装
-scoop search <name>
-scoop install babylon/<name>
+## 维护规范
 
-# 更新 bucket（scoop update 时自动 git pull；也可手动）
-git -C $env:SCOOP\buckets\babylon pull
-```
+修改或新增软件时，请逐项确认：
 
-## Manifest 命名规则
-
-- 每个软件一个 JSON 文件，文件名（不含 .json）即包名，安装时用 `babylon/<包名>` 引用。
-- 推荐使用小写、无空格的名称，如 `hypomux.json`；
-- 担心与主流 bucket 冲突时可使用 `Author.Software.json`（winget 风格）命名，
-  例如 `bggRGjQaUbCoE.PiliPlus.json`。
-- 同名冲突时，`scoop bucket list` 中排序靠前（先添加）的 bucket 优先，
-  因此安装时建议始终带 bucket 前缀：`scoop install babylon/<name>`。
+1. **命名**：小写、无空格；与主流 bucket 冲突时用 `Author.Software.json`（winget 风格）
+2. **编码**：UTF-8 with BOM；JSON 可解析；内嵌 PowerShell 兼容 PS 5.1；`Remove-Item` 必须带 `-Confirm:$false`
+3. **无硬编码路径**：脚本只使用 `$persist_dir` / `$version` / `$dir` 等变量
+4. **兼容自动清理**：本仓库依赖 `scoop cleanup * -k` 删除旧版本目录，须满足：
+   - 用户数据经 persist 或存于 current，不依赖旧版本目录
+   - manifest 不引用旧版本路径
+   - 应用自带旧版本清理逻辑时，与全局 cleanup 并存无害
+5. **提交**：修改在 git 中提交（英文简洁 commit message），便于发布到其他机器
 
 ## 注意事项
 
-- 仅收录真正便携（绿色）的软件；
-- 若软件需要 exe/msi 安装器、管理员权限、写注册表或系统级安装，
-  请在 manifest 的 `description` 中标注 `[NOT PORTABLE]`，
-  或考虑使用 nonportable 类型的处理方式（见 Scoop 官方 nonportable bucket）。
-- 本 bucket 的修改请在 git 中提交，便于版本管理与发布到其他机器。
-
-## 准入规则：更新成功后自动清理旧版本（必备能力）
-
-本机自动更新管线（`Scoop\auto-update.ps1`，由计划任务 ScoopAutoUpdate 调用）已在两步更新
-全部成功后自动执行 `scoop cleanup * -k`：删除各应用旧版本目录与过期下载缓存，
-保留 `current` 指向的当前版本与 `persist` 持久化数据，单个失败不阻塞流程。
-
-新增软件到本 bucket 时必须确认与该机制兼容（逐项检查，例外需在 PR/commit 说明中注明原因）：
-
-1. **用户数据必须经 `persist` 声明或存于 `current` 目录内**——cleanup 会直接删除旧版本目录，
-   存于旧版本目录且未 persist 的数据将在更新后被清除（参照 ghost-downloader-3、mpv-lazy 的 persist 写法）；
-2. **manifest 不得依赖旧版本目录存在**（如硬编码旧版本路径的 shim/post_install 逻辑）；
-3. 若应用自带旧版本清理逻辑（如 ghost-downloader-3 的 post_install），与全局 cleanup 并存无害，无需移除。
-
-注：当前 Scoop 版本不支持 `scoop config cleanup` 内建自动清理配置项，故该能力由更新脚本承担；
-若未来 Scoop 内建支持，可迁移至 `scoop config cleanup true` 并同步更新本节。
+- 安装时始终带 `babylon/` 前缀：`scoop install babylon/<包名>`
+- QQ / WeChat 为官方安装器便携提取，仅供个人学习使用
+- 无法直连 GitHub 时，请先配置代理后再添加 bucket 与安装
