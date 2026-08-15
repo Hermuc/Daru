@@ -50,7 +50,7 @@ babylon/
 
 ### 流程
 
-1. 参考已有 manifest 作为模板（结构最全：`QQ.json` / `WeChat.json`，含 junction 持久化与 checkver/autoupdate 全套）
+1. 参考已有 manifest 作为模板（结构最全：`QQ.json` / `WeChat.json`，含 junction 持久化与 checkver/autoupdate 全套；AppData 数据较轻的 Flutter 系应用参考 `Kazumi.json` / `PiliPlus.json`）
 2. 编写 `bucket/<包名>.json`：文件名即软件名（如 `QQ.json` / `PiliPlus.json`），小写、无空格
 3. 本地验证（见「提交前验证」）
 4. commit + push（见「提交与推送」）
@@ -63,6 +63,7 @@ babylon/
 4. 注册表共享视图（`HKLM\SOFTWARE` 与 `WOW6432Node` 指向同一数据）：第二处删除加 `-ErrorAction SilentlyContinue`；脚本慎用 `$ErrorActionPreference='Stop'`，避免单点失败中断后续步骤
 5. **无硬编码路径**：只使用 `$dir` / `$version` / `$persist_dir` 等变量；`bin` / `shortcuts` 只写 current 内的相对路径（文件名），不写绝对路径（版本更新后绝对路径会变死链）
 6. 官方安装器提取类（QQ / WeChat 等）：删除 Uninstall.exe 等卸载器，防止误点触发官方卸载流程；notes 提示用户关闭应用内自更新，避免绕过 Scoop 版本管理
+7. **GUI 启动包装器**（需先设环境变量再启动，如 HypoMux 的 HYPOMUX_DATA_DIR）：shortcut 指向 `.vbs`（wscript 以窗口样式 0 运行，零黑窗闪现；vbs 文件必须 ASCII——WScript 按 ANSI 读取）；`bin` 用 `.cmd`——scoop shim 对 `.vbs` 无专门分支，会生成无效 shim；manifest 内嵌生成 vbs 时用 `Chr(34)` 拼接引号，避免双重转义
 
 ### 数据持久化（本仓库核心能力）
 
@@ -71,8 +72,10 @@ babylon/
    - 链接不存在 → 直接创建 junction 指向 persist 目录
    - 已是 junction → 幂等跳过
    - 真实目录有数据 → `robocopy /E /COPY:DAT /DCOPY:DAT` 迁移（勿用 `/COPYALL`，ACL 权限会失败）→ 原目录改名 `.bak-<时间戳>` 作回滚点 → 建 junction
-3. pre_uninstall / uninstaller 对称处理：`.Delete()` 删 junction，保留 persist 数据
-4. 效果：首次安装自动迁移用户既有数据；重装系统后 `scoop install` 即恢复登录态
+3. AppData 数据较轻的 Flutter 系应用（Kazumi / OpenSpeedy / PiliPlus / tubatools）：pre_install / post_install 用 `robocopy /E /MOVE` 直接搬移（无 `.bak` 残留），但**必须检查 `$LASTEXITCODE`**——迁移失败（≥8）时保留原数据、不删原链接，禁止无条件继续
+4. 建 junction 必须幂等（两种模式通用）：链接不存在 → 创建；已是 junction → 跳过；真实目录残留（迁移失败等）→ 警告并跳过，数据保留原地
+5. pre_uninstall / uninstaller 对称处理：`.Delete()` 删 junction，保留 persist 数据
+6. 效果：首次安装自动迁移用户既有数据；重装系统后 `scoop install` 即恢复登录态
 
 ### 安装包解包
 
@@ -96,16 +99,20 @@ babylon/
 1. 用户数据经 persist 或存于 current，**不依赖旧版本目录**
 2. manifest 不引用旧版本路径
 3. 应用自带旧版本清理逻辑与全局 cleanup 并存无害
+4. **不要使用 `cleanup` 字段**（当前 Scoop 已不处理该字段，OpenSpeedy / PiliPlus 曾误用后移除）；卸载后的残留目录如需清理，在 notes 中提示用户手动删除
 
 ### 提交前验证
 
 ```powershell
 # 1) JSON 合法性（含 BOM 检查）
 Get-Content bucket/<包名>.json -Raw -Encoding UTF8 | ConvertFrom-Json
-# 2) 版本检测链路（不带前缀；本机新版 Scoop 无 checkver 时改用 scoop info）
+# 2) 内嵌 PowerShell 脚本语法检查（pre_install / post_install / installer / uninstaller 等 script 字段，报错即修复）
+$m = Get-Content bucket/<包名>.json -Raw -Encoding UTF8 | ConvertFrom-Json
+[System.Management.Automation.Language.Parser]::ParseInput(((@($m.pre_install) + @($m.post_install) + @($m.pre_uninstall) + @($m.installer.script) + @($m.uninstaller.script)) -join "`n"), [ref]$null, [ref]$null) | Out-Null
+# 3) 版本检测链路（不带前缀；本机新版 Scoop 无 checkver 时改用 scoop info）
 scoop checkver <包名>
 scoop info babylon/<包名>
-# 3) 实机安装测试（可选，会实际安装）
+# 4) 实机安装测试（可选，会实际安装）
 scoop install babylon/<包名>
 ```
 
