@@ -13,6 +13,8 @@
     },
     "extract_to": "app",
     "pre_install": [
+        "# 关闭可能正在运行的旧版本进程，避免迁移时文件占用",
+        "Stop-Process -Name 'kazumi' -Force -ErrorAction SilentlyContinue",
         "# 数据目录 Junction 化：AppData 路径 -> persist（首次/迁移时自动搬运已有数据）",
         "$link = \"$env:AppData\\com.example\\kazumi\"",
         "$dst = \"$persist_dir\\AppData\\Roaming\\com.example\\kazumi\"",
@@ -20,14 +22,24 @@
         "    $item = Get-Item $link -Force",
         "    if ($item.LinkType -eq 'Junction') {",
         "        $old = $item.Target",
-        "        if ($old -ne $dst) { robocopy $old $dst /E /MOVE /R:1 /W:1 /NP /NFL /NDL /NJH /NJS | Out-Null }",
-        "        (Get-Item $link -Force).Delete()",
+        "        if ($old -ne $dst) {",
+        "            robocopy $old $dst /E /MOVE /R:1 /W:1 /NP /NFL /NDL /NJH /NJS | Out-Null",
+        "            if ($LASTEXITCODE -ge 8) { Write-Host \"WARNING: migration failed (robocopy $LASTEXITCODE); keeping existing link.\" }",
+        "            else { (Get-Item $link -Force).Delete() }",
+        "        }",
         "    } else {",
         "        robocopy $link $dst /E /MOVE /R:1 /W:1 /NP /NFL /NDL /NJH /NJS | Out-Null",
+        "        if ($LASTEXITCODE -ge 8) { Write-Host \"WARNING: migration failed (robocopy $LASTEXITCODE); original data kept in place.\" }",
         "    }",
         "}"
     ],
-    "post_install": "New-Item -ItemType Junction -Path \"$env:AppData\\com.example\\kazumi\" -Target \"$persist_dir\\AppData\\Roaming\\com.example\\kazumi\" | Out-Null",
+    "post_install": [
+        "$link = \"$env:AppData\\com.example\\kazumi\"",
+        "$dst = \"$persist_dir\\AppData\\Roaming\\com.example\\kazumi\"",
+        "if (!(Test-Path $link)) { New-Item -ItemType Junction -Path $link -Target $dst | Out-Null }",
+        "elseif ((Get-Item $link -Force).LinkType -eq 'Junction') { Write-Host \"Already linked: $link\" }",
+        "else { Write-Host \"WARNING: $link exists as a real folder; junction skipped.\" }"
+    ],
     "pre_uninstall": [
         "Stop-Process -Name 'kazumi' -Force -ErrorAction SilentlyContinue",
         "if ((Test-Path \"$env:AppData\\com.example\\kazumi\") -and ((Get-Item \"$env:AppData\\com.example\\kazumi\" -Force).LinkType -eq 'Junction')) { (Get-Item \"$env:AppData\\com.example\\kazumi\" -Force).Delete() }"

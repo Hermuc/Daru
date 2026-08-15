@@ -22,11 +22,19 @@
         "# 统一主程序文件名（安装器内实际为 HypoMux.exe，NTFS 大小写不敏感，此行为兼容保险）",
         "if (!(Test-Path \"$dir\\hypomux.exe\")) { Rename-Item \"$dir\\HypoMux.exe\" 'hypomux.exe' -ErrorAction SilentlyContinue }",
         "# 生成便携启动器：仅对 HypoMux 自身进程注入 HYPOMUX_DATA_DIR，不写全局环境变量",
-        "Set-Content \"$dir\\start-portable.cmd\" -Value @('@echo off', 'set \"HYPOMUX_DATA_DIR=%~dp0data\"', 'start \"\" \"%~dp0hypomux.exe\"') -Encoding ASCII"
+        "Set-Content \"$dir\\start-portable.cmd\" -Value @('@echo off', 'set \"HYPOMUX_DATA_DIR=%~dp0data\"', 'start \"\" \"%~dp0hypomux.exe\"') -Encoding ASCII",
+        "# 生成零闪现启动器（VBScript 由 wscript 运行，无黑窗），与 cmd 版等价",
+        "Set-Content \"$dir\\start-portable.vbs\" -Value @(",
+        "    'Set fso = CreateObject(\"Scripting.FileSystemObject\")',",
+        "    'Set ws = CreateObject(\"WScript.Shell\")',",
+        "    'dir = fso.GetParentFolderName(WScript.ScriptFullName)',",
+        "    'ws.Environment(\"PROCESS\")(\"HYPOMUX_DATA_DIR\") = dir & \"\\data\"',",
+        "    'ws.Run Chr(34) & dir & \"\\hypomux.exe\" & Chr(34), 0, False'",
+        ") -Encoding ASCII"
     ],
     "shortcuts": [
         [
-            "start-portable.cmd",
+            "start-portable.vbs",
             "HypoMux"
         ]
     ],
@@ -42,7 +50,8 @@
         "此为便携版：由官方 SignPath 签名的 NSIS 安装器经 7-Zip 静态提取重组而成，未经过安装器执行，",
         "不注册 Windows 服务、不写注册表卸载项。",
         "用户数据经 HYPOMUX_DATA_DIR 重定向到 data 目录（persist），随程序目录迁移。",
-        "请务必通过开始菜单的 HypoMux 快捷方式（或 hypomux shim）启动；",
+        "请务必通过开始菜单的 HypoMux 快捷方式启动（VBScript 零闪现包装器，无黑窗）；",
+        "或 hypomux shim（命令行入口，启动瞬间有短暂黑窗属正常）；",
         "直接运行 hypomux.exe 会导致数据落入 %USERPROFILE%\\.hypomux。",
         "TUN（虚拟网卡）模式按需弹出 UAC 提权，属正常行为；不依赖 Windows 服务。",
         "需要系统已装 Microsoft Edge WebView2 Runtime（Win10/11 一般随 Edge 内置）。",

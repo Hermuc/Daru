@@ -17,6 +17,8 @@
     },
     "extract_to": "app",
     "post_install": [
+        "# 关闭可能正在运行的旧版本进程，避免迁移时文件占用",
+        "Stop-Process -Name 'TubaWinUi3' -Force -ErrorAction SilentlyContinue",
         "# 数据目录 Junction 化：LocalAppData 路径 -> persist（首次/迁移时自动搬运已有数据）",
         "$link = \"$env:LocalAppData\\TubaWinUi3\"",
         "$dst = \"$persist_dir\\AppData\\Local\\TubaWinUi3\"",
@@ -24,13 +26,19 @@
         "    $item = Get-Item $link -Force",
         "    if ($item.LinkType -eq 'Junction') {",
         "        $old = $item.Target",
-        "        if ($old -ne $dst) { robocopy $old $dst /E /MOVE /R:1 /W:1 /NP /NFL /NDL /NJH /NJS | Out-Null }",
-        "        (Get-Item $link -Force).Delete()",
+        "        if ($old -ne $dst) {",
+        "            robocopy $old $dst /E /MOVE /R:1 /W:1 /NP /NFL /NDL /NJH /NJS | Out-Null",
+        "            if ($LASTEXITCODE -ge 8) { Write-Host \"WARNING: migration failed (robocopy $LASTEXITCODE); keeping existing link.\" }",
+        "            else { (Get-Item $link -Force).Delete() }",
+        "        }",
         "    } else {",
         "        robocopy $link $dst /E /MOVE /R:1 /W:1 /NP /NFL /NDL /NJH /NJS | Out-Null",
+        "        if ($LASTEXITCODE -ge 8) { Write-Host \"WARNING: migration failed (robocopy $LASTEXITCODE); original data kept in place.\" }",
         "    }",
         "}",
-        "New-Item -ItemType Junction -Path \"$env:LocalAppData\\TubaWinUi3\" -Target \"$persist_dir\\AppData\\Local\\TubaWinUi3\" | Out-Null"
+        "if (!(Test-Path $link)) { New-Item -ItemType Junction -Path $link -Target $dst | Out-Null }",
+        "elseif ((Get-Item $link -Force).LinkType -eq 'Junction') { Write-Host \"Already linked: $link\" }",
+        "else { Write-Host \"WARNING: $link exists as a real folder; junction skipped.\" }"
     ],
     "pre_uninstall": [
         "Stop-Process -Name 'TubaWinUi3' -Force -ErrorAction SilentlyContinue",
