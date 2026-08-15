@@ -2,7 +2,7 @@ name: excavator
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 * * * *'
+    - cron: '*/15 * * * *'
 permissions:
   contents: write
   issues: write
