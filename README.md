@@ -51,7 +51,7 @@ babylon/
 ### 流程
 
 1. 参考已有 manifest 作为模板（结构最全：`QQ.json` / `WeChat.json`，含 junction 持久化与 checkver/autoupdate 全套）
-2. 编写 `bucket/<包名>.json`：文件名小写、无空格；与主流 bucket 冲突时用 `Author.Software.json`（winget 风格）
+2. 编写 `bucket/<包名>.json`：文件名即软件名（如 `QQ.json` / `PiliPlus.json`），小写、无空格
 3. 本地验证（见「提交前验证」）
 4. commit + push（见「提交与推送」）
 
