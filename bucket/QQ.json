@@ -36,7 +36,7 @@
     ],
     "installer": {
         "script": [
-            "Remove-Item \"$dir\\Uninstall.exe\" -Force -ErrorAction SilentlyContinue",
+            "Remove-Item \"$dir\\Uninstall.exe\" -Force -Confirm:$false -ErrorAction SilentlyContinue",
             "function Ensure-LinkedData {",
             "    param($Target, $Link)",
             "    if (Test-Path $Link) {",

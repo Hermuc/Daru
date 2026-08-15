@@ -51,8 +51,8 @@
         "$msix = Get-ChildItem -Path $bundleTmp -Filter \"*_$archShort.msix\" | Select-Object -First 1",
         "Move-Item -Path $msix.FullName -Destination \"$dir\" -Force",
         "[System.IO.Compression.ZipFile]::ExtractToDirectory((Get-ChildItem -Path \"$dir\" -Filter '*.msix' | Select-Object -First 1).FullName, \"$dir\")",
-        "Remove-Item -Path $bundleTmp, $bundle.FullName -Recurse -Force",
-        "Remove-Item -Path \"$dir\\*\" -Include 'Appx*', '?Content*', 'Code*' -Recurse -Force"
+        "Remove-Item -Path $bundleTmp, $bundle.FullName -Recurse -Force -Confirm:$false",
+        "Remove-Item -Path \"$dir\\*\" -Include 'Appx*', '?Content*', 'Code*' -Recurse -Force -Confirm:$false"
     ],
     "post_install": [
         "Get-AppxPackage -Name '40174MouriNaruto.NanaZip' | Remove-AppxPackage -ErrorAction SilentlyContinue",

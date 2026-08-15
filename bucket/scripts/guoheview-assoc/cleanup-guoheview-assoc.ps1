@@ -40,7 +40,7 @@ if (-not (Backup-Key 'HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Fi
 # ---------- 2) 删除应用入口与 Capabilities 分支 ----------
 Write-Host '[2/5] 删除应用入口与 Capabilities ...'
 foreach ($k in $appKey, $softKey) {
-    if (Test-Path $k) { Remove-Item $k -Recurse; Write-Host "      deleted: $k" }
+    if (Test-Path $k) { Remove-Item $k -Recurse -Confirm:$false; Write-Host "      deleted: $k" }
     else { Write-Host "      skip(不存在): $k" }
 }
 
@@ -48,7 +48,7 @@ foreach ($k in $appKey, $softKey) {
 Write-Host '[3/5] 清理 RegisteredApplications ...'
 $props = Get-ItemProperty $regApps -ErrorAction SilentlyContinue
 if ($props -and $props.PSObject.Properties.Name -contains 'GuoheView') {
-    Remove-ItemProperty $regApps -Name 'GuoheView'
+    Remove-ItemProperty $regApps -Name 'GuoheView' -Confirm:$false
     Write-Host '      deleted value: GuoheView'
 } else { Write-Host '      skip(值不存在)' }
 
@@ -60,7 +60,7 @@ Get-ChildItem $fe | ForEach-Object {
     $owp = Join-Path $_.PSPath 'OpenWithProgids'
     if (Test-Path $owp) {
         (Get-Item $owp).Property | Where-Object { $_ -eq $owValue } | ForEach-Object {
-            Remove-ItemProperty $owp -Name $_
+            Remove-ItemProperty $owp -Name $_ -Confirm:$false
             Write-Host "      [del] FileExts\$extName\OpenWithProgids"
             $script:removed++
         }
