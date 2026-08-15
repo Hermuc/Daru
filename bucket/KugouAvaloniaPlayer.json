@@ -17,6 +17,40 @@
         "# 关闭正在运行的播放器与桌面歌词组件，避免更新时文件占用导致解压/切换失败",
         "Stop-Process -Name 'KugouAvaloniaPlayer', 'KugouTaskbarLyrics' -Force -ErrorAction SilentlyContinue"
     ],
+    "installer": {
+        "script": [
+            "# 数据目录 Junction 化：应用数据固定落于 %APPDATA%/kugou（kugou-player.db、logs）与 %LOCALAPPDATA%/kugou（image-cache），",
+            "# 无法经 persist 字段链接（不在版本目录内），故参照微信/QQ 模式重定向至 $persist_dir，重装系统后数据不丢失",
+            "function Ensure-LinkedData {",
+            "    param($Target, $Link)",
+            "    if (Test-Path $Link) {",
+            "        $item = Get-Item $Link -Force",
+            "        if ($item.LinkType -eq 'Junction') { Write-Host \"Already linked: $Link\"; return }",
+            "        $bak = \"$Link.bak-$([DateTime]::Now.ToString('yyyyMMddHHmmss'))\"",
+            "        New-Item -ItemType Directory -Path $Target -Force | Out-Null",
+            "        Write-Host \"Migrating existing data: $Link -> $Target\"",
+            "        robocopy $Link $Target /E /COPY:DAT /DCOPY:DAT /R:2 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+            "        if ($LASTEXITCODE -lt 8) {",
+            "            Rename-Item -Path $Link -NewName (Split-Path $bak -Leaf) -Force",
+            "            New-Item -ItemType Junction -Path $Link -Target $Target | Out-Null",
+            "            Write-Host \"Data migrated. Original kept at $bak - delete it manually after verifying.\"",
+            "        } else { Write-Host \"WARNING: migration failed (robocopy $LASTEXITCODE); junction skipped, data kept in place.\" }",
+            "        return",
+            "    }",
+            "    New-Item -ItemType Directory -Path $Target -Force | Out-Null",
+            "    New-Item -ItemType Junction -Path $Link -Target $Target | Out-Null",
+            "    Write-Host \"Linked: $Link -> $Target\"",
+            "}",
+            "Ensure-LinkedData \"$persist_dir\\appdata\" \"$env:APPDATA\\kugou\"",
+            "Ensure-LinkedData \"$persist_dir\\localappdata\" \"$env:LOCALAPPDATA\\kugou\""
+        ]
+    },
+    "pre_uninstall": [
+        "# 移除数据目录 junction（保留 $persist_dir 数据）；卸载后原目录不再指向 persist",
+        "foreach ($l in @(\"$env:APPDATA\\kugou\", \"$env:LOCALAPPDATA\\kugou\")) {",
+        "    if ((Test-Path $l) -and ((Get-Item $l -Force).LinkType -eq 'Junction')) { (Get-Item $l -Force).Delete() }",
+        "}"
+    ],
     "bin": "KugouAvaloniaPlayer.exe",
     "shortcuts": [
         [
@@ -25,6 +59,8 @@
         ]
     ],
     "notes": [
+        "用户数据（播放列表/设置/登录态 kugou-player.db、logs）位于 %APPDATA%\\kugou，已通过 junction 重定向至 $persist_dir（appdata / localappdata），重装系统后 scoop install 即自动恢复；",
+        "首次安装/更新时自动迁移既有数据，原目录保留为 .bak-<时间戳> 回滚点，确认无误后可手动删除；卸载仅移除 junction，$persist_dir 下数据保留。",
         "便携版：包内 .portable 标记禁用自动更新（Scoop 负责更新），包内 Update.exe 与 packages 目录不被提取，属正常现象；",
         "桌面歌词组件 KugouTaskbarLyrics.exe 随主程序目录提供，可手动创建快捷方式；",
         "自动更新：checkver 走 GitHub release API，URL 由 v$version 直接推导，哈希由 Scoop 下载新包后自动计算。"
