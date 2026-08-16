@@ -1,12 +1,12 @@
-﻿{
-    "version": "2.5.5",
+{
+    "version": "2.5.6",
     "description": "Windows 多网卡带宽叠加与网络加速工具，支持系统代理、多出口调度与 TUN 虚拟网卡模式 | Windows multi-NIC bandwidth aggregation and network acceleration tool with system proxy, multi-exit scheduling and TUN mode",
     "homepage": "https://github.com/Hypostasis-Cat/HypoMux",
     "license": "AGPL-3.0-only",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/Hypostasis-Cat/HypoMux/releases/download/v2.5.5/HypoMux_Setup_2.5.5.exe",
-            "hash": "3211615585ed52ba37a1df17264ae9eb84048623872e74a7b2669814a06b1dc2"
+            "url": "https://github.com/Hypostasis-Cat/HypoMux/releases/download/v2.5.6/HypoMux_Setup_2.5.6.exe",
+            "hash": "601dbebc470ecd8366e0d0fd3f5a6d0d06f80e5741960ce0c167e4970b2bab33"
         }
     },
     "pre_install": [
