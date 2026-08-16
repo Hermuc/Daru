@@ -61,12 +61,10 @@ babylon/
 1. **UTF-8 with BOM**（文件头 `EF BB BF`）；`ConvertFrom-Json` 可解析；内嵌 PowerShell 兼容 **PS 5.1 与 7+**
 2. **`Remove-Item` 必须带 `-Confirm:$false`**——非交互环境（定时任务、自动更新）会因确认提示挂起
 3. **删除 junction 用 `(Get-Item $path -Force).Delete()`**——PS 5.1 的 `Remove-Item` 删 junction 抛 NullReferenceException
-4. 注册表共享视图（`HKLM\SOFTWARE` 与 `WOW6432Node` 指向同一数据）：第二处删除加 `-ErrorAction SilentlyContinue`；脚本慎用 `$ErrorActionPreference='Stop'`，避免单点失败中断后续步骤
+4. 注册表共享视图（`HKLM\SOFTWARE` 与 `WOW6432Node` 指向同一数据）：第二处删除加 `-ErrorAction SilentlyContinue`（适用于涉及注册表清理的 manifest 内嵌脚本）；manifest 内嵌脚本慎用 `$ErrorActionPreference='Stop'`，避免单点失败中断后续步骤（独立的交互式脚本不受此限）
 5. **无硬编码路径**：只使用 `$dir` / `$version` / `$persist_dir` 等变量；`bin` / `shortcuts` 只写 current 内的相对路径（文件名），不写绝对路径（版本更新后绝对路径会变死链）
-6. 官方安装器提取类（QQ / WeChat 等）：删除 Uninstall.exe 等卸载器，防止误点触发官方卸载流程；notes 提示用户关闭应用内自更新，避免绕过 Scoop 版本管理
-7. **GUI 启动包装器**（需先设环境变量再启动，如 HypoMux 的 HYPOMUX_DATA_DIR）：shortcut 指向 `.vbs`（wscript 以窗口样式 0 运行，零黑窗闪现；vbs 文件必须 ASCII——WScript 按 ANSI 读取）；`bin` 用 `.cmd`——scoop shim 对 `.vbs` 无专门分支，会生成无效 shim；manifest 内嵌生成 vbs 时用 `Chr(34)` 拼接引号，避免双重转义
-8. **excavator 自动更新（GitHub Actions）重写 manifest 时可能移除 BOM 并损坏中文注释**（Kazumi 2.2.8 实证：`首次/迁移` 变 `�?`）——每次自动更新提交出现后，检查目标文件 BOM（`EF BB BF`）与中文完整性；已损坏时用 `git checkout <更新前提交> -- <文件>` 从 git 历史恢复并重新提交
-9. **面向用户的脚本须支持双击运行且可移植**：`.ps1` 默认双击用记事本打开，须提供 Windows 原生 `.cmd` / `.bat` 双击包装器（不得要求安装额外软件），包装器带 `-ExecutionPolicy Bypass`，路径用 `%~dp0` / `$PSScriptRoot` 推导——详见「脚本双击运行与可移植性」
+6. **GUI 启动包装器**（需先设环境变量再启动，如 HypoMux 的 HYPOMUX_DATA_DIR）：shortcut 指向 `.vbs`（wscript 以窗口样式 0 运行，零黑窗闪现；vbs 文件必须 ASCII——WScript 按 ANSI 读取）；`bin` 用 `.cmd`——scoop shim 对 `.vbs` 无专门分支，会生成无效 shim；manifest 内嵌生成 vbs 时用 `Chr(34)` 拼接引号，避免双重转义
+7. **面向用户的脚本须支持双击运行且可移植**（仅供维护者终端使用的脚本不受此限）：`.ps1` 默认双击用记事本打开，须提供 Windows 原生 `.cmd` / `.bat` 双击包装器（不得要求安装额外软件），包装器带 `-ExecutionPolicy Bypass`，路径用 `%~dp0` / `$PSScriptRoot` 推导——详见「脚本双击运行与可移植性」
 
 ### 数据持久化（本仓库核心能力）
 
@@ -86,6 +84,7 @@ babylon/
 2. NSIS 安装器（微信等）：7-Zip **静态提取**核心文件，不执行安装器（不注册服务、不写注册表）
 3. Velopack 结构：压缩包根目录只有 stub 时，设 `extract_dir` 指向实际可执行目录
 4. 解包统一用 `Expand-7zipArchive`（scoop 内置，无需 `depends` 字段）；nanazip 为特例：零 7zip，用 .NET `ZipFile` 原生解包（URL 不带 `#/dl.7z`）
+5. 官方安装器提取类（QQ / WeChat 等）：删除 Uninstall.exe 等卸载器，防止误点触发官方卸载流程；notes 提示用户关闭应用内自更新，避免绕过 Scoop 版本管理
 
 ### checkver 与 autoupdate
 
@@ -99,20 +98,19 @@ babylon/
 
 本仓库自动更新管线在更新后逐应用执行 `scoop cleanup <应用> -k`（删除旧版本目录与过期缓存，保留 current 与 persist；完整实现见 `bucket/scripts/auto-update/`，部署方法见该目录内 register 脚本头部注释）。注意：**必须逐应用调用而非 `scoop cleanup *`**——后者遇到被进程占用的文件（如常驻后台工具）会报错并中断整个命令，导致后续应用都不被清理。新增软件须满足：
 
-1. 用户数据经 persist 或存于 current，**不依赖旧版本目录**
-2. manifest 不引用旧版本路径
-3. 应用自带旧版本清理逻辑与全局 cleanup 并存无害
-4. **不要使用 `cleanup` 字段**（当前 Scoop 已不处理该字段，OpenSpeedy / PiliPlus 曾误用后移除）；卸载后的残留目录如需清理，在 notes 中提示用户手动删除
+1. 用户数据经 persist 或存于 current，**不依赖旧版本目录**，manifest 也不引用旧版本路径
+2. 应用自带旧版本清理逻辑与全局 cleanup 并存无害
+3. **不要使用 `cleanup` 字段**（当前 Scoop 已不处理该字段，OpenSpeedy / PiliPlus 曾误用后移除）；卸载后的残留目录如需清理，在 notes 中提示用户手动删除
 
 ### 脚本双击运行与可移植性
 
 `bucket/scripts/` 下提供给用户使用的脚本，必须支持在 Windows 资源管理器中**双击直接运行**，且具备**可移植性**（重装系统、更换盘符、复制到其他机器后仍可用）。范例：`bucket/scripts/auto-update/`（Scoop 登录自动更新 + 逐应用清理旧版本）。
 
 1. **双击可运行**：`.ps1` 默认双击用记事本打开（且受 ExecutionPolicy 限制），不能直接作为用户入口；须提供 Windows 原生可双击运行的包装器 `.cmd`（或 `.bat`），由 cmd.exe 直接执行，**不得要求用户安装额外软件**；不建议通过修改 `.ps1` 文件关联实现（全局安全降级，机器本地设置重装即失效）
-2. **绕开执行策略**：包装器调用 `powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0<脚本>.ps1"`；Bypass 仅作用于本次调用，不修改系统策略；末尾加 `pause` 让结果停留可见
+2. **绕开执行策略**：包装器调用 `powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0<脚本>.ps1"`；Bypass 仅作用于本次调用，不修改系统策略；交互入口建议以 `pause` 结尾，让结果停留可见
 3. **禁止硬编码路径**：脚本与包装器均不得写死本机盘符或绝对路径——包装器用 `%~dp0`，PowerShell 用 `$PSScriptRoot`（兼容 PS 5.1 可降级 `Split-Path -Parent $MyInvocation.MyCommand.Path`）推导自身位置
 4. **部署前置条件须在脚本输出和 README 中明确说明**：如脚本必须位于 Scoop 根目录（含 `apps\` 与 `shims\`），脚本应在启动时校验并给出清晰错误提示，不得默默失败
-5. **编码要求与既有铁律一致**：`.cmd` / `.bat` 保持纯 ASCII（cmd.exe 按 OEM 代码页读取，中文易乱码）；`.vbs` 纯 ASCII（WScript 按 ANSI 读取）；含中文的 `.ps1` 保持 UTF-8 with BOM；PowerShell 兼容 5.1 与 7+
+5. **编码要求**：`.cmd` / `.bat` 保持纯 ASCII（cmd.exe 按 OEM 代码页读取，中文易乱码）；其余同铁律 1、6（`.vbs` 纯 ASCII、含中文的 `.ps1` 为 UTF-8 with BOM、PowerShell 兼容 5.1 与 7+）
 6. **README / 脚本头部注释须说明运行方式**：哪些文件可双击（推荐入口）、哪些需终端运行、部署步骤与前置条件
 
 现有 auto-update 脚本的运行方式：
@@ -146,6 +144,7 @@ scoop install babylon/<包名>
 
 1. commit message 用英文简洁描述
 2. push 失败：git 不读取 Windows 系统代理——先确认代理进程与监听端口，用 `git -c http.proxy=... -c https.proxy=... push` 仅本次走代理重试；再 `git pull --rebase` 解决冲突后重推；**禁止 `--force` 覆盖远程历史**
+3. **excavator 自动更新（GitHub Actions）重写 manifest 时可能移除 BOM 并损坏中文注释**（Kazumi 2.2.8 实证：`首次/迁移` 变 `�?`）——每次自动更新提交出现后，检查目标文件 BOM（`EF BB BF`）与中文完整性；已损坏时用 `git checkout <更新前提交> -- <文件>` 从 git 历史恢复并重新提交
 
 ## 注意事项
 
