@@ -33,7 +33,7 @@ scoop bucket add bbn https://github.com/Hermuc/babylon.git   # 之后用 bbn/<�
 ```
 babylon/
 ├── bucket/            # 全部 manifest（每个软件一个 .json）
-│   └── scripts/       # 辅助脚本（部分为维护者本地方案存档，普通用户无需关注）
+│   └── scripts/       # 辅助脚本（部分为维护者本地方案存档，普通用户无需关注；用户可双击 .cmd 入口，见「脚本双击运行与可移植性」）
 │       └── auto-update/  # Scoop 登录自动更新 + 逐应用清理旧版本全套脚本（含 .cmd 双击包装器，可移植，无硬编码路径）
 ├── .github/           # 自动检查上游新版本的 GitHub Actions
 └── README.md
@@ -66,6 +66,7 @@ babylon/
 6. 官方安装器提取类（QQ / WeChat 等）：删除 Uninstall.exe 等卸载器，防止误点触发官方卸载流程；notes 提示用户关闭应用内自更新，避免绕过 Scoop 版本管理
 7. **GUI 启动包装器**（需先设环境变量再启动，如 HypoMux 的 HYPOMUX_DATA_DIR）：shortcut 指向 `.vbs`（wscript 以窗口样式 0 运行，零黑窗闪现；vbs 文件必须 ASCII——WScript 按 ANSI 读取）；`bin` 用 `.cmd`——scoop shim 对 `.vbs` 无专门分支，会生成无效 shim；manifest 内嵌生成 vbs 时用 `Chr(34)` 拼接引号，避免双重转义
 8. **excavator 自动更新（GitHub Actions）重写 manifest 时可能移除 BOM 并损坏中文注释**（Kazumi 2.2.8 实证：`首次/迁移` 变 `�?`）——每次自动更新提交出现后，检查目标文件 BOM（`EF BB BF`）与中文完整性；已损坏时用 `git checkout <更新前提交> -- <文件>` 从 git 历史恢复并重新提交
+9. **面向用户的脚本须支持双击运行且可移植**：`.ps1` 默认双击用记事本打开，须提供 Windows 原生 `.cmd` / `.bat` 双击包装器（不得要求安装额外软件），包装器带 `-ExecutionPolicy Bypass`，路径用 `%~dp0` / `$PSScriptRoot` 推导——详见「脚本双击运行与可移植性」
 
 ### 数据持久化（本仓库核心能力）
 
@@ -102,6 +103,29 @@ babylon/
 2. manifest 不引用旧版本路径
 3. 应用自带旧版本清理逻辑与全局 cleanup 并存无害
 4. **不要使用 `cleanup` 字段**（当前 Scoop 已不处理该字段，OpenSpeedy / PiliPlus 曾误用后移除）；卸载后的残留目录如需清理，在 notes 中提示用户手动删除
+
+### 脚本双击运行与可移植性
+
+`bucket/scripts/` 下提供给用户使用的脚本，必须支持在 Windows 资源管理器中**双击直接运行**，且具备**可移植性**（重装系统、更换盘符、复制到其他机器后仍可用）。范例：`bucket/scripts/auto-update/`（Scoop 登录自动更新 + 逐应用清理旧版本）。
+
+1. **双击可运行**：`.ps1` 默认双击用记事本打开（且受 ExecutionPolicy 限制），不能直接作为用户入口；须提供 Windows 原生可双击运行的包装器 `.cmd`（或 `.bat`），由 cmd.exe 直接执行，**不得要求用户安装额外软件**；不建议通过修改 `.ps1` 文件关联实现（全局安全降级，机器本地设置重装即失效）
+2. **绕开执行策略**：包装器调用 `powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0<脚本>.ps1"`；Bypass 仅作用于本次调用，不修改系统策略；末尾加 `pause` 让结果停留可见
+3. **禁止硬编码路径**：脚本与包装器均不得写死本机盘符或绝对路径——包装器用 `%~dp0`，PowerShell 用 `$PSScriptRoot`（兼容 PS 5.1 可降级 `Split-Path -Parent $MyInvocation.MyCommand.Path`）推导自身位置
+4. **部署前置条件须在脚本输出和 README 中明确说明**：如脚本必须位于 Scoop 根目录（含 `apps\` 与 `shims\`），脚本应在启动时校验并给出清晰错误提示，不得默默失败
+5. **编码要求与既有铁律一致**：`.cmd` / `.bat` 保持纯 ASCII（cmd.exe 按 OEM 代码页读取，中文易乱码）；`.vbs` 纯 ASCII（WScript 按 ANSI 读取）；含中文的 `.ps1` 保持 UTF-8 with BOM；PowerShell 兼容 5.1 与 7+
+6. **README / 脚本头部注释须说明运行方式**：哪些文件可双击（推荐入口）、哪些需终端运行、部署步骤与前置条件
+
+现有 auto-update 脚本的运行方式：
+
+| 文件 | 双击行为 | 正确用法 |
+|------|----------|----------|
+| `register-scoop-autoupdate.cmd` | ✅ **推荐双击入口**：注册/重建 ScoopAutoUpdate 计划任务（部署后运行一次；重装系统后再跑一次） | 也可终端：`powershell -ExecutionPolicy Bypass -File .\register-scoop-autoupdate.ps1` |
+| `auto-update.cmd` | ✅ **双击入口**：手动全量更新+逐应用清理（控制台可见进度，日志写 `update.log`） | 与计划任务同一管线 |
+| `auto-update.vbs` | 可双击但**不建议**：计划任务静默启动器，零窗口无反馈 | 仅供计划任务调用 |
+| `auto-update.ps1` / `register-scoop-autoupdate.ps1` | ❌ 双击用记事本打开 | 经上方 .cmd 包装器或终端运行 |
+| `ScoopAutoUpdate.xml` | ❌ 仅供查看 | 任务定义模板，勿手动导入（Action 为示例路径），交给 register 脚本动态构建 |
+
+部署前置条件：将 auto-update 目录整套文件拷到 Scoop 根目录（含 `apps\` 与 `shims\` 的那一层）再双击 `.cmd`；在仓库原位置双击会报错退出（设计使然）。
 
 ### 提交前验证
 
