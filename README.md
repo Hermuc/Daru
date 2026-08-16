@@ -34,6 +34,7 @@ scoop bucket add bbn https://github.com/Hermuc/babylon.git   # 之后用 bbn/<�
 babylon/
 ├── bucket/            # 全部 manifest（每个软件一个 .json）
 │   └── scripts/       # 辅助脚本（部分为维护者本地方案存档，普通用户无需关注）
+│       └── auto-update/  # Scoop 登录自动更新 + 逐应用清理旧版本四件套（可移植，无硬编码路径）
 ├── .github/           # 自动检查上游新版本的 GitHub Actions
 └── README.md
 ```
@@ -95,7 +96,7 @@ babylon/
 
 ### 兼容自动清理（必备能力）
 
-本仓库自动更新管线在更新成功后执行 `scoop cleanup * -k`（删除旧版本目录与过期缓存，保留 current 与 persist）。新增软件须满足：
+本仓库自动更新管线在更新后逐应用执行 `scoop cleanup <应用> -k`（删除旧版本目录与过期缓存，保留 current 与 persist；完整实现见 `bucket/scripts/auto-update/`，部署方法见该目录内 register 脚本头部注释）。注意：**必须逐应用调用而非 `scoop cleanup *`**——后者遇到被进程占用的文件（如常驻后台工具）会报错并中断整个命令，导致后续应用都不被清理。新增软件须满足：
 
 1. 用户数据经 persist 或存于 current，**不依赖旧版本目录**
 2. manifest 不引用旧版本路径
