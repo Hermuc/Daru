@@ -1,5 +1,5 @@
-﻿{
-    "version": "1.5.1",
+{
+    "version": "1.5.2",
     "description": "图吧工具箱 winUI3 版，现代化的 PC 硬件检测与系统维护工具集 | Modern toolkit for PC hardware detection and system maintenance",
     "homepage": "https://tubawinui3.cn",
     "license": {
@@ -7,12 +7,12 @@
     },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/luolangaga/tubatools/releases/download/v1.5.1/TubaWinUi3_Portable_1.5.1_x64.zip",
-            "hash": "99f1b66ee568911f189c8a2e783d64b02aaed9ec466253a0c306863132eac6c1"
+            "url": "https://github.com/luolangaga/tubatools/releases/download/v1.5.2/TubaWinUi3_Portable_1.5.2_x64.zip",
+            "hash": "86ed90c315d50918b3697b996ffd65e274e3b0963f0d00ff5432e99a7970414b"
         },
         "arm64": {
-            "url": "https://github.com/luolangaga/tubatools/releases/download/v1.5.1/TubaWinUi3_Portable_1.5.1_arm64.zip",
-            "hash": "10af1a3e8bf277a6c7717e67ff472ef93fc5c1efe720f346dcc0e6c476d19572"
+            "url": "https://github.com/luolangaga/tubatools/releases/download/v1.5.2/TubaWinUi3_Portable_1.5.2_arm64.zip",
+            "hash": "428ae22d6a34802119065b0951163022905caa2c1c523949de23c7eb5352b8ab"
         }
     },
     "extract_to": "app",
@@ -56,9 +56,7 @@
             "图吧工具箱WinUi3"
         ]
     ],
-    "persist": [
-        "AppData\\Local\\TubaWinUi3"
-    ],
+    "persist": "AppData\\Local\\TubaWinUi3",
     "checkver": {
         "github": "https://github.com/luolangaga/tubatools"
     },
