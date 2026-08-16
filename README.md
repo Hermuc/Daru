@@ -144,7 +144,7 @@ scoop install babylon/<包名>
 
 1. commit message 用英文简洁描述
 2. push 失败：git 不读取 Windows 系统代理——先确认代理进程与监听端口，用 `git -c http.proxy=... -c https.proxy=... push` 仅本次走代理重试；再 `git pull --rebase` 解决冲突后重推；**禁止 `--force` 覆盖远程历史**
-3. **excavator 自动更新（GitHub Actions）重写 manifest 时可能移除 BOM 并损坏中文注释**（Kazumi 2.2.8 实证：`首次/迁移` 变 `�?`）——每次自动更新提交出现后，检查目标文件 BOM（`EF BB BF`）与中文完整性；已损坏时用 `git checkout <更新前提交> -- <文件>` 从 git 历史恢复并重新提交
+3. **excavator 自动更新（GitHub Actions）重写 manifest 时可能移除 BOM 并损坏中文注释**（Kazumi 2.2.8 实证：`首次/迁移` 变 `�?`）——已自动化：`.github/workflows/excavator.yml` 的 `verify-integrity` job 在每次自动更新后校验全部 manifest 的 BOM（`EF BB BF`）与中文完整性（U+FFFD 检测），异常时 workflow 失败告警；发现损坏时用 `git checkout <更新前提交> -- <文件>` 从 git 历史恢复并重新提交（缺 BOM 而中文完好时可直接补回 `EF BB BF` 文件头）
 
 ## 注意事项
 

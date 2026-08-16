@@ -17,3 +17,27 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SKIP_UPDATED: '1'
+  verify-integrity:
+    needs: excavate
+    runs-on: windows-latest
+    steps:
+      - name: Checkout latest main (post-excavate state)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Verify manifest BOM and Chinese integrity
+        shell: pwsh
+        run: |
+          $bad = @()
+          foreach ($f in Get-ChildItem bucket/*.json) {
+            $bytes = [System.IO.File]::ReadAllBytes($f.FullName)
+            $hasBom = ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF)
+            $garbled = [System.Text.Encoding]::UTF8.GetString($bytes).IndexOf([char]0xFFFD) -ge 0
+            if (-not $hasBom) { Write-Host "MISSING BOM: $($f.Name)"; $bad += $f.Name }
+            if ($garbled) { Write-Host "GARBLED (U+FFFD): $($f.Name)"; $bad += $f.Name }
+          }
+          if ($bad.Count -gt 0) {
+            Write-Host "::error::Manifest integrity check failed: $($bad -join ', '). Excavator likely stripped BOM or corrupted Chinese. Restore from git history or re-add BOM (EF BB BF)."
+            exit 1
+          }
+          Write-Host "All manifests OK (UTF-8 BOM present, no U+FFFD)."
