@@ -34,7 +34,7 @@ scoop bucket add bbn https://github.com/Hermuc/babylon.git   # 之后用 bbn/<�
 babylon/
 ├── bucket/            # 全部 manifest（每个软件一个 .json）
 │   └── scripts/       # 辅助脚本（部分为维护者本地方案存档，普通用户无需关注）
-│       └── auto-update/  # Scoop 登录自动更新 + 逐应用清理旧版本四件套（可移植，无硬编码路径）
+│       └── auto-update/  # Scoop 登录自动更新 + 逐应用清理旧版本全套脚本（含 .cmd 双击包装器，可移植，无硬编码路径）
 ├── .github/           # 自动检查上游新版本的 GitHub Actions
 └── README.md
 ```

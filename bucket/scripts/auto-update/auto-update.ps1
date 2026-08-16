@@ -13,10 +13,12 @@
     健壮性：单个应用失败不阻塞其他应用；全程输出追加至 update.log（超过 10MB 自动轮转保留尾部）
     通知：正常成功且有版本变更 → 桌面通知；任一步骤出错 → 错误通知（Toast，失败降级为前台 MessageBox）；
           全部成功且无变更 → 完全静默
-    启动方式：计划任务经 wscript.exe 调用 auto-update.vbs 以窗口样式 0 启动本脚本，全程零窗口（无 conhost 闪现）
-    部署：将本目录四件套（本脚本 + auto-update.vbs + ScoopAutoUpdate.xml + register-scoop-autoupdate.ps1）
-          拷到 Scoop 根目录（含 apps\ 与 shims\ 的那一层），然后运行 register-scoop-autoupdate.ps1 注册计划任务；
-          重装系统后只需重跑 register 脚本。全程不硬编码路径。
+    启动方式：计划任务经 wscript.exe 调用 auto-update.vbs 以窗口样式 0 启动本脚本，全程零窗口（无 conhost 闪现）；
+          也可双击配套 auto-update.cmd 手动全量更新+清理（控制台窗口可见进度）
+    部署：将本目录整套文件（本脚本 + auto-update.vbs + ScoopAutoUpdate.xml + register-scoop-autoupdate.ps1
+          + 两个 .cmd 双击包装器）拷到 Scoop 根目录（含 apps\ 与 shims\ 的那一层），
+          然后双击 register-scoop-autoupdate.cmd（或命令行运行对应 .ps1）注册计划任务；
+          重装系统后只需重跑 register。全程不硬编码路径。
 .NOTES
     兼容 Windows PowerShell 5.1 与 PowerShell 7+（VBS 包装器与 WinRT Toast 均两版本通用）
     本文件须保存为 UTF-8 with BOM（PS 5.1 按 ANSI 读无 BOM 文件会破坏中文并可能解析失败）

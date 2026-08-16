@@ -14,9 +14,11 @@
     - No admin rights needed (task runs at logon with least privilege).
 
 .DEPLOY
-    1. Copy the four files of this folder (auto-update.ps1, auto-update.vbs,
-       ScoopAutoUpdate.xml, register-scoop-autoupdate.ps1) into your Scoop root.
-    2. Run:  powershell -ExecutionPolicy Bypass -File .\register-scoop-autoupdate.ps1
+    1. Copy this whole folder into your Scoop root (auto-update.ps1,
+       auto-update.vbs, ScoopAutoUpdate.xml, register-scoop-autoupdate.ps1,
+       plus the two .cmd double-click wrappers).
+    2. Double-click register-scoop-autoupdate.cmd, or run:
+       powershell -ExecutionPolicy Bypass -File .\register-scoop-autoupdate.ps1
 
 .ROLLBACK
     Unregister-ScheduledTask -TaskName ScoopAutoUpdate -Confirm:$false
