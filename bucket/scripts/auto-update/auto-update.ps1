@@ -11,8 +11,8 @@
          更新失败的应用 current 仍指向旧版本，同样不会被误删；逐应用隔离：单个应用被进程占用
          仅该应用本轮跳过，不阻断其余应用——`scoop cleanup *` 遇文件锁会报错中断，故不采用）
     健壮性：单个应用失败不阻塞其他应用；全程输出追加至 update.log（超过 10MB 自动轮转保留尾部）
-    通知：正常成功且有版本变更 → 桌面通知；任一步骤出错 → 错误通知（Toast，失败降级为前台 MessageBox）；
-          全部成功且无变更 → 完全静默
+    通知：正常成功且有版本变更 → 桌面通知；检测到新版本但进程占用被跳过 → 跳过提示通知（不计为错误）；
+          任一步骤出错 → 错误通知（Toast，失败降级为前台 MessageBox）；全部成功且无变更 → 完全静默
     启动方式：计划任务经 wscript.exe 调用 auto-update.vbs 以窗口样式 0 启动本脚本，全程零窗口（无 conhost 闪现）；
           也可双击配套 auto-update.cmd 手动全量更新+清理（控制台窗口可见进度）
     部署：将本目录整套文件（本脚本 + auto-update.vbs + ScoopAutoUpdate.xml + register-scoop-autoupdate.ps1
@@ -45,9 +45,35 @@ function Get-ErrorLines([string]$Text) {
     )
     $lines = ($Text -split "`r?`n") | Where-Object {
         $line = $_
+        # 排除本脚本自身的回显/汇总行（以 >>> 开头），避免历史错误信息被二次误判
+        if ($line -match '^\s*>>>') { return $false }
         @($patterns | Where-Object { $line -match $_ }).Count -gt 0
     }
     if ($lines) { ($lines | Select-Object -First 4) -join '; ' } else { '' }
+}
+
+# ---------- 进程占用跳过检测：提取“检测到新版本但因进程占用跳过更新”的应用 ----------
+# scoop-update 对每个应用先输出 Updating 'app' (old -> new)（i18n 中文：更新 app (old -> new)），
+# 若检测到进程占用则输出 Running process detected, skip updating.（i18n 中文：检测到正在运行的进程，已跳过更新）
+function Get-SkippedApps([string]$Text) {
+    $names = New-Object System.Collections.Generic.List[string]
+    $current = $null
+    foreach ($line in ($Text -split "`r?`n")) {
+        if ($line -match "(?:Updating|更新)\s+'?([^'\s(]+)'?\s+\(") {
+            $current = $matches[1]
+        } elseif ($current -and ($line -match '(?i)Running process detected|跳过更新')) {
+            $names.Add($current)
+            $current = $null
+        }
+    }
+    return @($names)
+}
+
+# ---------- 从输出中剔除“进程占用跳过”相关行，避免该场景被误判为更新错误 ----------
+function Remove-SkipNoise([string]$Text) {
+    (($Text -split "`r?`n") | Where-Object {
+        $_ -notmatch '(?i)Running process detected|still running|仍在运行|正在运行中|跳过更新'
+    }) -join "`r`n"
 }
 
 # ---------- 错误通知：优先桌面 Toast，失败时降级为前台 MessageBox（PS 5.1/7 通用） ----------
@@ -102,13 +128,20 @@ $appOutput = & "$scoopHome\shims\scoop-update.cmd" -a 2>&1 | Out-String
 Write-Host $appOutput
 $step2Code = $LASTEXITCODE
 
-# ---------- 3) 汇总版本变更 ----------
-$updated = [regex]::Matches($appOutput, "Updating '([^']+)' \(([^)]+)\)")
+# ---------- 3) 汇总版本变更（兼容英文原生输出 Updating 'app' (a -> b) 与 i18n 中文输出 更新 app (a -> b)） ----------
+$updateRegex = "(?:Updating|更新)\s+'?([^'\s(]+)'?\s+\(([^)]+)\)"
+$updated = @([regex]::Matches($appOutput, $updateRegex) | ForEach-Object {
+    [pscustomobject]@{ Name = $_.Groups[1].Value; Version = $_.Groups[2].Value }
+})
 $summary = if ($updated.Count -gt 0) {
-    ($updated | ForEach-Object { "$($_.Groups[1].Value) ($($_.Groups[2].Value))" }) -join '; '
+    ($updated | ForEach-Object { "$($_.Name) ($($_.Version))" }) -join '; '
 } else { '所有应用均为最新版本' }
+$skipped = @(Get-SkippedApps $appOutput)
 Write-Host ""
 Write-Host ">>> 本次更新完成：$summary"
+if ($skipped.Count -gt 0) {
+    Write-Host ">>> 以下应用检测到新版本但进程占用被跳过：$($skipped -join ', ')"
+}
 
 # ---------- 4) 错误检测（退出码 + 输出中的错误标记，覆盖下载失败/哈希校验失败/命令异常） ----------
 $failedSteps = New-Object System.Collections.Generic.List[string]
@@ -116,7 +149,7 @@ if ($step1Code -ne 0) { $failedSteps.Add("步骤 1 scoop update 退出码 $step1
 if ($step2Code -ne 0) { $failedSteps.Add("步骤 2 scoop-update -a 退出码 $step2Code") }
 $err1 = Get-ErrorLines $step1Output
 if ($err1) { $failedSteps.Add("步骤 1 scoop update：$err1") }
-$err2 = Get-ErrorLines $appOutput
+$err2 = Get-ErrorLines (Remove-SkipNoise $appOutput)
 if ($err2) { $failedSteps.Add("步骤 2 scoop-update -a：$err2") }
 if ($failedSteps.Count -gt 0) {
     $errorSummary = ($failedSteps -join "`n")
@@ -174,6 +207,31 @@ if ($updated.Count -gt 0 -and $failedSteps.Count -eq 0) {
         [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('Microsoft.Windows.PowerShell').Show($toast)
     } catch {
         Write-Host "（桌面通知发送失败，已忽略：$($_.Exception.Message)）"
+    }
+}
+
+# ---------- 5.5) 进程占用跳过通知（检测到新版本但因进程占用被跳过，提醒关闭程序后手动补更） ----------
+if ($skipped.Count -gt 0) {
+    try {
+        [void][Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime]
+        [void][Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom, ContentType = WindowsRuntime]
+        $skipList = [System.Security.SecurityElement]::Escape(($skipped -join ', '))
+        $template = @"
+<toast>
+  <visual>
+    <binding template="ToastGeneric">
+      <text>Scoop 自动更新：{0} 个应用因进程占用跳过</text>
+      <text>检测到新版本但相关程序正在运行：{1}。关闭程序后运行 scoop update {1} 完成更新。</text>
+    </binding>
+  </visual>
+</toast>
+"@ -f $skipped.Count, $skipList
+        $xml = New-Object Windows.Data.Xml.Dom.XmlDocument
+        $xml.LoadXml($template)
+        $toast = [Windows.UI.Notifications.ToastNotification]::new($xml)
+        [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('Microsoft.Windows.PowerShell').Show($toast)
+    } catch {
+        Write-Host "（跳过提示通知发送失败，已忽略：$($_.Exception.Message)）"
     }
 }
 
