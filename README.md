@@ -153,6 +153,8 @@ Daru/
 
 **部署前置条件**：将 auto-update 整个文件夹拷到 Scoop 根目录（含 `apps\` 与 `shims\` 的那层）下的子文件夹（约定名 `AutoUpdate`）再双击 `.cmd`；在仓库原位置双击会报错退出（设计使然）。
 
+**维护者替代方案（免双副本同步）**：若 Daru 仓库就位于 Scoop 根目录的 `buckets\` 下，可不拷贝，直接创建 junction：`<Scoop 根>\AutoUpdate` → `bucket\scripts\auto-update`（`New-Item -ItemType Junction`，无需管理员）。仓库副本即唯一事实源，经 junction 编辑后直接 commit/push；脚本的 `$PSScriptRoot`/`%~dp0` 经 junction 仍返回 junction 路径，根目录推导不受影响。
+
 ### ✅ 提交前验证
 
 ```powershell
