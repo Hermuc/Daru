@@ -25,19 +25,44 @@ jobs:
         uses: actions/checkout@v5
         with:
           ref: main
-      - name: Verify manifest BOM and Chinese integrity
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify & self-heal manifest BOM / Chinese integrity
         shell: pwsh
         run: |
-          $bad = @()
+          # excavator 每轮更新都会重写 manifest 并剥掉 UTF-8 BOM（PS7 默认无 BOM），
+          # 因此这里对“仅缺 BOM、中文完好”的文件自动补回并提交（自愈），
+          # 只有真正的中文乱码（U+FFFD，数据已损坏、无法安全自动恢复）才报错中断。
+          $fatal = @()
+          $repaired = @()
           foreach ($f in Get-ChildItem bucket/*.json) {
             $bytes = [System.IO.File]::ReadAllBytes($f.FullName)
             $hasBom = ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF)
             $garbled = [System.Text.Encoding]::UTF8.GetString($bytes).IndexOf([char]0xFFFD) -ge 0
-            if (-not $hasBom) { Write-Host "MISSING BOM: $($f.Name)"; $bad += $f.Name }
-            if ($garbled) { Write-Host "GARBLED (U+FFFD): $($f.Name)"; $bad += $f.Name }
+            if ($garbled) {
+              Write-Host "GARBLED (U+FFFD): $($f.Name)"
+              $fatal += $f.Name
+              continue
+            }
+            if (-not $hasBom) {
+              Write-Host "MISSING BOM -> repairing: $($f.Name)"
+              $out = [System.IO.MemoryStream]::new()
+              $out.Write([byte[]](0xEF, 0xBB, 0xBF), 0, 3)
+              $out.Write($bytes, 0, $bytes.Length)
+              [System.IO.File]::WriteAllBytes($f.FullName, $out.ToArray())
+              $repaired += $f.Name
+            }
           }
-          if ($bad.Count -gt 0) {
-            Write-Host "::error::Manifest integrity check failed: $($bad -join ', '). Excavator likely stripped BOM or corrupted Chinese. Restore from git history or re-add BOM (EF BB BF)."
+          if ($fatal.Count -gt 0) {
+            Write-Host "::error::Manifest Chinese corrupted (U+FFFD): $($fatal -join ', '). Auto-repair impossible; restore from git history manually."
             exit 1
           }
-          Write-Host "All manifests OK (UTF-8 BOM present, no U+FFFD)."
+          if ($repaired.Count -gt 0) {
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add bucket/*.json
+            git commit -m "ci: restore UTF-8 BOM stripped by excavator ($($repaired -join ', '))"
+            git push origin main
+            Write-Host "Self-healed BOM and pushed: $($repaired -join ', ')"
+          } else {
+            Write-Host "All manifests OK (UTF-8 BOM present, no U+FFFD)."
+          }
