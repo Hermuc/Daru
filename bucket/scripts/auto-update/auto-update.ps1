@@ -4,9 +4,8 @@
     Scoop 开机/登录自动更新脚本（由计划任务 ScoopAutoUpdate 调用）
 .DESCRIPTION
     完整流程：
-      1) 原生 `scoop update`（无参数）——同步 scoop 自身 + 所有 bucket（git 同步）
-      2) abgox `scoop-update -a`——所有应用经 gh-proxy 镜像加速更新
-         （内置镜像 URL 替换，无需代理；跳过 scoop 自身，第 1 步已覆盖）
+      1) 原生 `scoop update`（无参数）——同步 scoop 自身 + 所有 bucket（git 同步；main/extras 为南大镜像源）
+      2) 原生 `scoop update *`——所有应用直连官方源更新（跳过 scoop 自身，第 1 步已覆盖）
       3) `scoop cleanup <各应用> -k`——无条件逐应用执行（cleanup 只删非 current 版本目录，persist 不受影响；
          更新失败的应用 current 仍指向旧版本，同样不会被误删；逐应用隔离：单个应用被进程占用
          仅该应用本轮跳过，不阻断其余应用——`scoop cleanup *` 遇文件锁会报错中断，故不采用）
@@ -53,7 +52,7 @@ function Get-ErrorLines([string]$Text) {
 }
 
 # ---------- 进程占用跳过检测：提取“检测到新版本但因进程占用跳过更新”的应用 ----------
-# scoop-update 对每个应用先输出 Updating 'app' (old -> new)（i18n 中文：更新 app (old -> new)），
+# scoop update 对每个应用先输出 Updating 'app' (old -> new)（i18n 中文：更新 app (old -> new)），
 # 若检测到进程占用则输出 Running process detected, skip updating.（i18n 中文：检测到正在运行的进程，已跳过更新）
 function Get-SkippedApps([string]$Text) {
     $names = New-Object System.Collections.Generic.List[string]
@@ -122,9 +121,9 @@ $step1Output = & "$scoopHome\shims\scoop.cmd" update 2>&1 | Out-String
 Write-Host $step1Output
 $step1Code = $LASTEXITCODE
 
-# ---------- 2) 所有应用经镜像加速更新（abgox.scoop-update，内置 gh-proxy URL 替换） ----------
-Write-Host '>>> 步骤 2/3：scoop-update -a（所有应用，gh-proxy 镜像加速）'
-$appOutput = & "$scoopHome\shims\scoop-update.cmd" -a 2>&1 | Out-String
+# ---------- 2) 所有应用直连官方源更新（原生 scoop update *；bucket 同步见步骤 1） ----------
+Write-Host '>>> 步骤 2/3：scoop update *（所有应用，直连官方源）'
+$appOutput = & "$scoopHome\shims\scoop.cmd" update * 2>&1 | Out-String
 Write-Host $appOutput
 $step2Code = $LASTEXITCODE
 
@@ -146,11 +145,11 @@ if ($skipped.Count -gt 0) {
 # ---------- 4) 错误检测（退出码 + 输出中的错误标记，覆盖下载失败/哈希校验失败/命令异常） ----------
 $failedSteps = New-Object System.Collections.Generic.List[string]
 if ($step1Code -ne 0) { $failedSteps.Add("步骤 1 scoop update 退出码 $step1Code") }
-if ($step2Code -ne 0) { $failedSteps.Add("步骤 2 scoop-update -a 退出码 $step2Code") }
+if ($step2Code -ne 0) { $failedSteps.Add("步骤 2 scoop update * 退出码 $step2Code") }
 $err1 = Get-ErrorLines $step1Output
 if ($err1) { $failedSteps.Add("步骤 1 scoop update：$err1") }
 $err2 = Get-ErrorLines (Remove-SkipNoise $appOutput)
-if ($err2) { $failedSteps.Add("步骤 2 scoop-update -a：$err2") }
+if ($err2) { $failedSteps.Add("步骤 2 scoop update *：$err2") }
 if ($failedSteps.Count -gt 0) {
     $errorSummary = ($failedSteps -join "`n")
     if ($errorSummary.Length -gt 300) { $errorSummary = $errorSummary.Substring(0, 300) + '…' }
