@@ -1,6 +1,6 @@
 @echo off
 rem Double-click wrapper for auto-update.ps1: manual full Scoop update
-rem (scoop update + gh-proxy accelerated app update + per-app old-version
+rem (scoop update + native scoop update * app update + per-app old-version
 rem cleanup). Same pipeline as the scheduled task, but interactive:
 rem progress is shown in this console window, results also go to
 rem <Scoop root>\update.log.
