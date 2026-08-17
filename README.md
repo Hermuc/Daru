@@ -45,7 +45,6 @@ scoop update
 | [QQ](bucket/QQ.json) | 腾讯 QQ（NT 架构，官方安装器便携提取） |
 | [tubatools](bucket/tubatools.json) | 图吧工具箱 WinUI3 版，PC 硬件检测与系统维护工具集 |
 | [WeChat](bucket/WeChat.json) | 腾讯微信（官方安装器便携提取） |
-| [windirstat](bucket/windirstat.json) | 磁盘空间统计与清理工具（便携设置版，配置不写注册表） |
 
 > 清单以 [`bucket/`](bucket/) 目录为准（每个 .json 即一个软件），也可用 `scoop search` 查询。
 
