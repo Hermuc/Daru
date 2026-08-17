@@ -1,4 +1,4 @@
-﻿# 🏺 babylon
+﻿# 🏺 Daru
 
 本地自定义 Scoop bucket，收录主流 bucket 中搜索不到的小众 Windows 软件，以 GitHub Releases 的绿色便携包（zip / 7z）为主。
 
@@ -8,13 +8,13 @@
 
 ```powershell
 # 1. 添加 bucket
-scoop bucket add babylon https://github.com/Hermuc/babylon.git
+scoop bucket add Daru https://github.com/Hermuc/Daru.git
 
 # 2. 搜索软件
 scoop search <关键字>
 
-# 3. 安装（带 babylon/ 前缀，避免与主流 bucket 同名包冲突）
-scoop install babylon/<包名>
+# 3. 安装（带 Daru/ 前缀，避免与主流 bucket 同名包冲突）
+scoop install Daru/<包名>
 
 # 4. 更新（自动同步所有 bucket）
 scoop update
@@ -25,13 +25,13 @@ scoop update
 若本机已存在同名 bucket，可换名导入：
 
 ```powershell
-scoop bucket add bbn https://github.com/Hermuc/babylon.git   # 之后用 bbn/<包名> 引用
+scoop bucket add dru https://github.com/Hermuc/Daru.git   # 之后用 dru/<包名> 引用
 ```
 
 ## 📂 目录结构
 
 ```
-babylon/
+Daru/
 ├── bucket/            # 全部 manifest（每个软件一个 .json）
 │   └── scripts/       # 辅助脚本（部分为维护者本地方案存档，普通用户无需关注；用户可双击 .cmd 入口，见「脚本双击运行与可移植性」）
 │       └── auto-update/  # Scoop 登录自动更新 + 逐应用清理旧版本全套脚本（含 .cmd 双击包装器，可移植，无硬编码路径）
@@ -132,9 +132,9 @@ $m = Get-Content bucket/<包名>.json -Raw -Encoding UTF8 | ConvertFrom-Json
 [System.Management.Automation.Language.Parser]::ParseInput(((@($m.pre_install) + @($m.post_install) + @($m.pre_uninstall) + @($m.installer.script) + @($m.uninstaller.script)) -join "`n"), [ref]$null, [ref]$null) | Out-Null
 # 3) 版本检测链路（不带前缀；本机新版 Scoop 无 checkver 时改用 scoop info）
 scoop checkver <包名>
-scoop info babylon/<包名>
+scoop info Daru/<包名>
 # 4) 实机安装测试（可选，会实际安装）
-scoop install babylon/<包名>
+scoop install Daru/<包名>
 ```
 
 ### 📤 提交与推送
@@ -145,6 +145,6 @@ scoop install babylon/<包名>
 
 ## 📌 注意事项
 
-- 安装时始终带 `babylon/` 前缀，避免与主流 bucket 同名包冲突
+- 安装时始终带 `Daru/` 前缀，避免与主流 bucket 同名包冲突
 - QQ / WeChat 为官方安装器便携提取，仅供个人学习使用
 - 无法直连 GitHub 时，先配置代理再添加 bucket 与安装
