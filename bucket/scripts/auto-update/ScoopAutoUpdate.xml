@@ -37,8 +37,8 @@
   <Actions Context="Author">
     <Exec>
       <Command>C:\Windows\System32\wscript.exe</Command>
-      <Arguments>"D:\PortableApps\Scoop\auto-update.vbs"</Arguments>
-      <WorkingDirectory>D:\PortableApps\Scoop</WorkingDirectory>
+      <Arguments>"D:\PortableApps\Scoop\AutoUpdate\auto-update.vbs"</Arguments>
+      <WorkingDirectory>D:\PortableApps\Scoop\AutoUpdate</WorkingDirectory>
     </Exec>
   </Actions>
 </Task>

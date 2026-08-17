@@ -5,8 +5,9 @@
 
 .DESCRIPTION
     Portable - no hardcoded paths:
-    - Scoop home = the folder containing this script (must be the Scoop root,
-      i.e. the directory holding apps\ and shims\).
+    - Scoop home = the PARENT of the folder containing this script (must be
+      the Scoop root, i.e. the directory holding apps\ and shims\); the
+      scripts themselves live in a subfolder (convention: AutoUpdate\).
     - Trigger / settings / principal are read from ScoopAutoUpdate.xml next to
       this script; the task ACTION is built dynamically:
           wscript.exe "<this folder>\auto-update.vbs"
@@ -14,9 +15,10 @@
     - No admin rights needed (task runs at logon with least privilege).
 
 .DEPLOY
-    1. Copy this whole folder into your Scoop root (auto-update.ps1,
-       auto-update.vbs, ScoopAutoUpdate.xml, register-scoop-autoupdate.ps1,
-       plus the two .cmd double-click wrappers).
+    1. Copy this whole folder into a subfolder (convention: AutoUpdate)
+       under your Scoop root (auto-update.ps1, auto-update.vbs,
+       ScoopAutoUpdate.xml, register-scoop-autoupdate.ps1, plus the two
+       .cmd double-click wrappers).
     2. Double-click register-scoop-autoupdate.cmd, or run:
        powershell -ExecutionPolicy Bypass -File .\register-scoop-autoupdate.ps1
 
@@ -24,8 +26,9 @@
     Unregister-ScheduledTask -TaskName ScoopAutoUpdate -Confirm:$false
 #>
 $ErrorActionPreference = 'Stop'
-$scoopHome = $PSScriptRoot
-$xmlPath = Join-Path $scoopHome 'ScoopAutoUpdate.xml'
+$scriptDir = $PSScriptRoot
+$scoopHome = Split-Path -Parent $scriptDir
+$xmlPath = Join-Path $scriptDir 'ScoopAutoUpdate.xml'
 
 if (-not ((Test-Path (Join-Path $scoopHome 'apps')) -and (Test-Path (Join-Path $scoopHome 'shims')))) {
     Write-Host "[ERROR] $scoopHome does not look like a Scoop root (apps\ and shims\ required)." -ForegroundColor Red
@@ -36,8 +39,8 @@ if (-not (Test-Path $xmlPath)) {
     exit 1
 }
 foreach ($req in 'auto-update.ps1', 'auto-update.vbs') {
-    if (-not (Test-Path (Join-Path $scoopHome $req))) {
-        Write-Host "[ERROR] missing $req in $scoopHome" -ForegroundColor Red
+    if (-not (Test-Path (Join-Path $scriptDir $req))) {
+        Write-Host "[ERROR] missing $req in $scriptDir" -ForegroundColor Red
         exit 1
     }
 }
@@ -50,8 +53,8 @@ $delay = if ($trigger.Delay) { $trigger.Delay } else { 'PT3M' }
 
 # --- build the action dynamically (always points at THIS folder) ---
 $action = New-ScheduledTaskAction -Execute 'C:\Windows\System32\wscript.exe' `
-    -Argument ('"{0}"' -f (Join-Path $scoopHome 'auto-update.vbs')) `
-    -WorkingDirectory $scoopHome
+    -Argument ('"{0}"' -f (Join-Path $scriptDir 'auto-update.vbs')) `
+    -WorkingDirectory $scriptDir
 
 $taskName = 'ScoopAutoUpdate'
 $existing = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
