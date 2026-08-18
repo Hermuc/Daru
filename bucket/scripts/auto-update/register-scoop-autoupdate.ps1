@@ -8,8 +8,7 @@
     - Scoop home = the PARENT of the folder containing this script (must be
       the Scoop root, i.e. the directory holding apps\ and shims\); the
       scripts themselves live in a subfolder (convention: AutoUpdate\).
-    - Trigger / settings / principal are read from ScoopAutoUpdate.xml next to
-      this script; the task ACTION is built dynamically:
+    - The task ACTION is built dynamically:
           wscript.exe "<this folder>\auto-update.vbs"
       so the task keeps working even if the drive letter or folder moves.
     - No admin rights needed (task runs at logon with least privilege).
@@ -17,8 +16,8 @@
 .DEPLOY
     1. Copy this whole folder into a subfolder (convention: AutoUpdate)
        under your Scoop root (auto-update.ps1, auto-update.vbs,
-       ScoopAutoUpdate.xml, register-scoop-autoupdate.ps1, plus the two
-       .cmd double-click wrappers).
+       register-scoop-autoupdate.ps1, plus the two .cmd double-click
+       wrappers).
     2. Double-click register-scoop-autoupdate.cmd, or run:
        powershell -ExecutionPolicy Bypass -File .\register-scoop-autoupdate.ps1
 
@@ -28,14 +27,9 @@
 $ErrorActionPreference = 'Stop'
 $scriptDir = $PSScriptRoot
 $scoopHome = Split-Path -Parent $scriptDir
-$xmlPath = Join-Path $scriptDir 'ScoopAutoUpdate.xml'
 
 if (-not ((Test-Path (Join-Path $scoopHome 'apps')) -and (Test-Path (Join-Path $scoopHome 'shims')))) {
     Write-Host "[ERROR] $scoopHome does not look like a Scoop root (apps\ and shims\ required)." -ForegroundColor Red
-    exit 1
-}
-if (-not (Test-Path $xmlPath)) {
-    Write-Host "[ERROR] $xmlPath not found." -ForegroundColor Red
     exit 1
 }
 foreach ($req in 'auto-update.ps1', 'auto-update.vbs') {
@@ -45,11 +39,9 @@ foreach ($req in 'auto-update.ps1', 'auto-update.vbs') {
     }
 }
 
-# --- trigger / settings / principal from the XML template ---
-# ([xml] cast auto-detects the file's actual encoding regardless of the declaration)
-[xml]$xml = [System.IO.File]::ReadAllText($xmlPath)
-$trigger = $xml.Task.Triggers.LogonTrigger
-$delay = if ($trigger.Delay) { $trigger.Delay } else { 'PT3M' }
+# --- logon trigger delay (inlined; the former ScoopAutoUpdate.xml template
+#     was removed because this constant was the only field ever consumed) ---
+$delay = 'PT3M'
 
 # --- build the action dynamically (always points at THIS folder) ---
 $action = New-ScheduledTaskAction -Execute 'C:\Windows\System32\wscript.exe' `

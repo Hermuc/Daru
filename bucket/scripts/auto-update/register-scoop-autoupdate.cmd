@@ -7,6 +7,12 @@ rem DEPLOY FIRST: copy the whole auto-update folder into a subfolder
 rem (convention: AutoUpdate) under your Scoop root (the folder containing
 rem apps\ and shims\), then double-click this file.
 rem Running it from the repository location will fail by design.
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0register-scoop-autoupdate.ps1"
+rem Engine: prefers pwsh 7+ (on PATH), falls back to 5.1 - same pattern as scoop.cmd.
+where /q pwsh.exe
+if %errorlevel% equ 0 (
+    pwsh.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0register-scoop-autoupdate.ps1"
+) else (
+    powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0register-scoop-autoupdate.ps1"
+)
 echo.
 pause

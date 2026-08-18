@@ -148,7 +148,6 @@ Daru/
 | `auto-update.cmd` | ✅ **双击入口**：手动全量更新+逐应用清理（控制台可见进度，日志写 `update.log`） | 与计划任务同一管线 |
 | `auto-update.vbs` | 可双击但**不建议**：计划任务静默启动器，零窗口无反馈 | 仅供计划任务调用 |
 | `auto-update.ps1` / `register-scoop-autoupdate.ps1` | ❌ 双击用记事本打开 | 经上方 .cmd 包装器或终端运行 |
-| `ScoopAutoUpdate.xml` | ❌ 仅供查看 | 任务定义模板，勿手动导入（Action 为示例路径），交给 register 脚本动态构建 |
 
 **部署前置条件**：将 auto-update 整个文件夹拷到 Scoop 根目录（含 `apps\` 与 `shims\` 的那层）下的子文件夹（约定名 `AutoUpdate`）再双击 `.cmd`；在仓库原位置双击会报错退出（设计使然）。
 

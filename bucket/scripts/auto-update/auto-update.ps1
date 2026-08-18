@@ -14,7 +14,7 @@
           任一步骤出错 → 错误通知（Toast，失败降级为前台 MessageBox）；全部成功且无变更 → 完全静默
     启动方式：计划任务经 wscript.exe 调用 auto-update.vbs 以窗口样式 0 启动本脚本，全程零窗口（无 conhost 闪现）；
           也可双击配套 auto-update.cmd 手动全量更新+清理（控制台窗口可见进度）
-    部署：将本文件夹整套文件（本脚本 + auto-update.vbs + ScoopAutoUpdate.xml + register-scoop-autoupdate.ps1
+    部署：将本文件夹整套文件（本脚本 + auto-update.vbs + register-scoop-autoupdate.ps1
           + 两个 .cmd 双击包装器）拷到 Scoop 根目录（含 apps\ 与 shims\ 的那一层）下的子文件夹（约定名 AutoUpdate），
           然后双击 register-scoop-autoupdate.cmd（或命令行运行对应 .ps1）注册计划任务；
           重装系统后只需重跑 register。全程不硬编码路径。
