@@ -144,12 +144,11 @@ Daru/
 
 | 文件 | 双击行为 | 正确用法 |
 |------|----------|----------|
-| `register-scoop-autoupdate.cmd` | ✅ **推荐双击入口**：注册/重建 ScoopAutoUpdate 计划任务（部署后运行一次；重装系统后再跑一次） | 也可终端：`powershell -ExecutionPolicy Bypass -File .\register-scoop-autoupdate.ps1` |
-| `auto-update.cmd` | ✅ **双击入口**：手动全量更新+逐应用清理（控制台可见进度，日志写 `update.log`） | 与计划任务同一管线 |
+| `auto-update.cmd` | ✅ **推荐双击入口**：全量更新+逐应用清理（控制台可见进度，日志写 `update.log`）；若计划任务缺失（新部署/重装/被删除）会先询问是否重建（Y/N） | 与计划任务同一管线 |
 | `auto-update.vbs` | 可双击但**不建议**：计划任务静默启动器，零窗口无反馈 | 仅供计划任务调用 |
-| `auto-update.ps1` / `register-scoop-autoupdate.ps1` | ❌ 双击用记事本打开 | 经上方 .cmd 包装器或终端运行 |
+| `auto-update.ps1` | ❌ 双击用记事本打开 | 经上方 .cmd 包装器或终端运行 |
 
-**部署前置条件**：将 auto-update 整个文件夹拷到 Scoop 根目录（含 `apps\` 与 `shims\` 的那层）下的子文件夹（约定名 `AutoUpdate`）再双击 `.cmd`；在仓库原位置双击会报错退出（设计使然）。
+**部署前置条件**：将 auto-update 整个文件夹拷到 Scoop 根目录（含 `apps\` 与 `shims\` 的那层）下的子文件夹（约定名 `AutoUpdate`）再双击 `auto-update.cmd`——脚本检测到计划任务缺失时会询问是否重建，输入 Y 即完成注册并立即执行首次更新；重装系统后同样只需双击一次。在仓库原位置双击会报错退出（设计使然）。
 
 **维护者替代方案（免双副本同步）**：若 Daru 仓库就位于 Scoop 根目录的 `buckets\` 下，可不拷贝，直接创建 junction：`<Scoop 根>\AutoUpdate` → `bucket\scripts\auto-update`（`New-Item -ItemType Junction`，无需管理员）。仓库副本即唯一事实源，经 junction 编辑后直接 commit/push；脚本的 `$PSScriptRoot`/`%~dp0` 经 junction 仍返回 junction 路径，根目录推导不受影响。
 

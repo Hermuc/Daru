@@ -14,10 +14,13 @@
           任一步骤出错 → 错误通知（Toast，失败降级为前台 MessageBox）；全部成功且无变更 → 完全静默
     启动方式：计划任务经 wscript.exe 调用 auto-update.vbs 以窗口样式 0 启动本脚本，全程零窗口（无 conhost 闪现）；
           也可双击配套 auto-update.cmd 手动全量更新+清理（控制台窗口可见进度）
-    部署：将本文件夹整套文件（本脚本 + auto-update.vbs + register-scoop-autoupdate.ps1
-          + 两个 .cmd 双击包装器）拷到 Scoop 根目录（含 apps\ 与 shims\ 的那一层）下的子文件夹（约定名 AutoUpdate），
-          然后双击 register-scoop-autoupdate.cmd（或命令行运行对应 .ps1）注册计划任务；
-          重装系统后只需重跑 register。全程不硬编码路径。
+    任务自愈：本脚本每次运行开头检查计划任务 ScoopAutoUpdate——缺失时（新部署/重装/被删除）在交互模式
+          （双击 .cmd）下询问是否重建，确认后按当前目录动态注册（Action 指向本文件夹的 vbs）；
+          静默路径（任务触发）下任务必存在，恒不询问。无需单独的注册工具。
+    部署：将本文件夹整套文件（本脚本 + auto-update.vbs + auto-update.cmd）拷到 Scoop 根目录
+          （含 apps\ 与 shims\ 的那一层）下的子文件夹（约定名 AutoUpdate），
+          双击 auto-update.cmd 即自动注册任务（交互确认）+ 执行一次完整更新；重装系统后同样只需双击一次。
+          全程不硬编码路径。
 .NOTES
     兼容 Windows PowerShell 5.1 与 PowerShell 7+（VBS 包装器与 WinRT Toast 均两版本通用）
     本文件须保存为 UTF-8 with BOM（PS 5.1 按 ANSI 读无 BOM 文件会破坏中文并可能解析失败）
@@ -38,6 +41,24 @@ if (-not ((Test-Path (Join-Path $candidate 'apps')) -and (Test-Path (Join-Path $
 }
 $scoopHome   = $candidate
 $logFile     = Join-Path $scoopHome 'update.log'
+
+# ---------- 任务自愈：注册 ScoopAutoUpdate 计划任务（动态 Action，可移植） ----------
+# 函数内 Stop 语义仅限本函数作用域，不影响主管线的 Continue 容错模式
+function Register-ScoopAutoUpdateTask {
+    $ErrorActionPreference = 'Stop'
+    $action = New-ScheduledTaskAction -Execute 'C:\Windows\System32\wscript.exe' `
+        -Argument ('"{0}"' -f (Join-Path $PSScriptRoot 'auto-update.vbs')) `
+        -WorkingDirectory $PSScriptRoot
+    $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Limited
+    $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
+        -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Hours 2) -MultipleInstances IgnoreNew
+    $logonTrigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
+    $logonTrigger.Delay = 'PT3M'
+    Register-ScheduledTask -TaskName 'ScoopAutoUpdate' -Action $action -Trigger $logonTrigger `
+        -Principal $principal -Settings $settings `
+        -Description 'Scoop logon auto-update + per-app old-version cleanup (see Scoop auto-update scripts).' | Out-Null
+    Write-Host '>>> 已注册计划任务 ScoopAutoUpdate（登录延迟 3 分钟后自动更新）'
+}
 
 # ---------- 错误行检测：从更新输出中提取错误信息（兼容中英文输出） ----------
 function Get-ErrorLines([string]$Text) {
@@ -116,6 +137,22 @@ if ((Test-Path $logFile) -and ((Get-Item $logFile).Length -gt 10MB)) {
 Start-Transcript -Path $logFile -Append | Out-Null
 Write-Host ''
 Write-Host ("==================== {0} 开始自动更新 ====================" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'))
+
+# ---------- 任务自愈（交互确认式）：任务缺失时询问是否重建 ----------
+# 仅交互（双击 .cmd）场景可达此处询问：静默路径（计划任务→vbs）任务必存在，恒跳过；
+# 任务存在但被禁用同样跳过（用户显式停用意图不被推翻）
+if (-not (Get-ScheduledTask -TaskName 'ScoopAutoUpdate' -ErrorAction SilentlyContinue)) {
+    Write-Host ''
+    Write-Host '>>> 检测到计划任务 ScoopAutoUpdate 不存在（新部署 / 任务被删除）'
+    $answer = Read-Host '是否重建自动更新任务（每次登录延迟 3 分钟后自动运行）？输入 Y 重建 / N 跳过（仅本次手动更新）'
+    if ($answer -match '^[Yy]') {
+        try { Register-ScoopAutoUpdateTask } catch {
+            Write-Host (">>> 任务注册失败（{0}）——本次更新不受影响，可稍后重试" -f $_.Exception.Message)
+        }
+    } else {
+        Write-Host '>>> 已跳过任务重建，本次仅执行手动更新'
+    }
+}
 
 # ---------- 1) 同步 scoop 自身 + 所有 bucket（原生；abgox 不覆盖这两项） ----------
 Write-Host ''

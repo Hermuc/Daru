@@ -4,6 +4,8 @@ rem (scoop update + native scoop update * app update + per-app old-version
 rem cleanup). Same pipeline as the scheduled task, but interactive:
 rem progress is shown in this console window, results also go to
 rem <Scoop root>\update.log.
+rem Self-heal: if the ScoopAutoUpdate task is missing (fresh deploy /
+rem after reinstall / deleted), the script asks whether to re-register it.
 rem
 rem DEPLOY FIRST: copy the whole auto-update folder into a subfolder
 rem (convention: AutoUpdate) under your Scoop root (the folder containing
