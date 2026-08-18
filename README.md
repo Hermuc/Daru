@@ -1,6 +1,6 @@
 ﻿# 🏺 Daru
 
-本地自定义 Scoop bucket，收录主流 bucket 中搜索不到的小众 Windows 软件，以 GitHub Releases 的绿色便携包（zip / 7z）为主。
+个人自用的本地 Scoop bucket，收录以 GitHub Releases 绿色便携包（zip / 7z）为主的 Windows 软件，解压即可运行、开箱即用、免安装。
 
 - 📦 **便携优先**：解压即可运行；确无法便携的在 description 标注 `[NOT PORTABLE]` 并说明原因
 - 💾 **数据不丢**：用户数据经 `persist` 或存于 `current` 目录，重装系统后仍可恢复登录态
@@ -178,3 +178,7 @@ scoop install Daru/<包名>
 - 安装时始终带 `Daru/` 前缀，避免与主流 bucket 同名包冲突
 - QQ / WeChat 为官方安装器便携提取，仅供个人学习使用
 - 无法直连 GitHub 时，先配置代理再添加 bucket 与安装
+
+## 📄 许可证
+
+本仓库基于 [MIT License](LICENSE) 开源。收录的第三方软件版权归其各自所有者。
