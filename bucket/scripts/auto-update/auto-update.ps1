@@ -60,6 +60,32 @@ function Register-ScoopAutoUpdateTask {
     Write-Host '>>> 已注册计划任务 ScoopAutoUpdate（登录延迟 3 分钟后自动更新）'
 }
 
+# ---------- 系统代理探测：scoop 未显式配置 proxy 时下载走 .NET 默认代理（=系统代理） ----------
+# 开机自动更新时代理软件（如 FlClash）可能尚未启动，系统代理指向的端口无人监听，
+# 导致步骤 2 全部下载失败退出码 1；此处探测不可达则临时置 scoop proxy=none 直连本轮
+function Get-SystemProxy() {
+    try {
+        $ie = Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings' -ErrorAction Stop
+        if ($ie.ProxyEnable -eq 1 -and $ie.ProxyServer) { return $ie.ProxyServer }
+    } catch { }
+    return $null
+}
+
+function Test-ProxyAlive([string]$ProxyServer) {
+    if (-not $ProxyServer) { return $true }   # 未启用系统代理 → 本就直连，无需降级
+    try {
+        $parts = ($ProxyServer -replace '^https?://', '') -split ':'
+        $hostName = $parts[0]
+        $port = 80
+        if ($parts.Count -gt 1 -and $parts[1] -match '^\d+$') { $port = [int]$parts[1] }
+        $client = New-Object System.Net.Sockets.TcpClient
+        try {
+            $task = $client.ConnectAsync($hostName, $port)
+            return ($task.Wait(500) -and $client.Connected)
+        } finally { $client.Dispose() }
+    } catch { return $false }
+}
+
 # ---------- 错误行检测：从更新输出中提取错误信息（兼容中英文输出） ----------
 function Get-ErrorLines([string]$Text) {
     $patterns = @(
@@ -154,6 +180,13 @@ if (-not (Get-ScheduledTask -TaskName 'ScoopAutoUpdate' -ErrorAction SilentlyCon
     }
 }
 
+# ---------- 代理配置残留自愈：上次运行异常中断可能残留 proxy=none，本次恢复为未配置 ----------
+$staleProxy = (& "$scoopHome\shims\scoop.cmd" config proxy 2>$null | Out-String).Trim()
+if ($staleProxy -eq 'none') {
+    & "$scoopHome\shims\scoop.cmd" config rm proxy | Out-Null
+    Write-Host '>>> 已清理上次中断残留的 scoop proxy=none 配置'
+}
+
 # ---------- 1) 同步 scoop 自身 + 所有 bucket（原生；abgox 不覆盖这两项） ----------
 Write-Host ''
 Write-Host '>>> 步骤 1/3：scoop update（同步 scoop 自身与所有 bucket）'
@@ -162,10 +195,26 @@ Write-Host $step1Output
 $step1Code = $LASTEXITCODE
 
 # ---------- 2) 所有应用直连官方源更新（原生 scoop update *；bucket 同步见步骤 1） ----------
+# 系统代理不可达（代理软件未就绪）时临时置 scoop proxy=none 直连本轮，
+# 用 try/finally 保证恢复；异常中断残留由上方自愈逻辑兑底
 Write-Host '>>> 步骤 2/3：scoop update *（所有应用，直连官方源）'
-$appOutput = & "$scoopHome\shims\scoop.cmd" update * 2>&1 | Out-String
+$sysProxy = Get-SystemProxy
+$proxyToggled = $false
+if ($sysProxy -and -not (Test-ProxyAlive $sysProxy)) {
+    Write-Host (">>> 系统代理 $sysProxy 不可达（代理软件未就绪），本轮更新临时直连")
+    & "$scoopHome\shims\scoop.cmd" config proxy none | Out-Null
+    $proxyToggled = $true
+}
+try {
+    $appOutput = & "$scoopHome\shims\scoop.cmd" update * 2>&1 | Out-String
+    $step2Code = $LASTEXITCODE
+} finally {
+    if ($proxyToggled) {
+        & "$scoopHome\shims\scoop.cmd" config rm proxy | Out-Null
+        Write-Host '>>> 已恢复 scoop 代理配置（直连仅限本轮）'
+    }
+}
 Write-Host $appOutput
-$step2Code = $LASTEXITCODE
 
 # ---------- 3) 汇总版本变更（兼容英文原生输出 Updating 'app' (a -> b) 与 i18n 中文输出 更新 app (a -> b)） ----------
 $updateRegex = "(?:Updating|更新)\s+'?([^'\s(]+)'?\s+\(([^)]+)\)"
