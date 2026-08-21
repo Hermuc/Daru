@@ -136,6 +136,8 @@ function Remove-SkipNoise([string]$Text) {
 # pwsh 7 不支持 WinRT 投影语法（ContentType=WindowsRuntime 为 5.1 专有），委托系统自带 powershell.exe 5.1
 # 代发（零外部依赖，保证可移植）；Toast XML 只在本函数构建一处，子进程仅负责显示。MessageBox 兑底仅在
 # 控制台窗口可见（手动双击 .cmd）时弹出——静默任务路径（vbs 隐藏窗口）永不弹阻塞对话框。样式调整只改本函数。
+# AUMID 用 Microsoft.Windows.Explorer：'Microsoft.Windows.PowerShell' 在 Win11 24H2 上未注册（开始菜单无对应
+# 快捷方式），其 Toast 会被系统静默丢弃（发送不报错但永不显示，实测）；Explorer 为系统必备组件、通知权限恒开。
 function Show-ScoopToast {
     param(
         [string]$Title,
@@ -168,7 +170,7 @@ $bodyXml
         $xml = New-Object Windows.Data.Xml.Dom.XmlDocument
         $xml.LoadXml($template)
         $toast = [Windows.UI.Notifications.ToastNotification]::new($xml)
-        [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('Microsoft.Windows.PowerShell').Show($toast)
+        [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('Microsoft.Windows.Explorer').Show($toast)
         $shown = $true
     } catch { }
 
@@ -183,7 +185,7 @@ try {
     $xml = New-Object Windows.Data.Xml.Dom.XmlDocument
     $xml.LoadXml($env:ScoopToastXml)
     $toast = [Windows.UI.Notifications.ToastNotification]::new($xml)
-    [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('Microsoft.Windows.PowerShell').Show($toast)
+    [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('Microsoft.Windows.Explorer').Show($toast)
     exit 0
 } catch { exit 1 }
 '@
