@@ -10,8 +10,12 @@
          更新失败的应用 current 仍指向旧版本，同样不会被误删；逐应用隔离：单个应用被进程占用
          仅该应用本轮跳过，不阻断其余应用——`scoop cleanup *` 遇文件锁会报错中断，故不采用）
     健壮性：单个应用失败不阻塞其他应用；全程输出追加至 update.log（超过 10MB 自动轮转保留尾部）
-    通知：正常成功且有版本变更 → 桌面通知；检测到新版本但进程占用被跳过 → 跳过提示通知（不计为错误）；
-          任一步骤出错 → 错误通知（Toast，失败降级为前台 MessageBox）；全部成功且无变更 → 完全静默
+    通知：每次运行结束必发一条汇总桌面通知（Toast）——无更新（全部最新）/ 已更新 N 个应用（含更新清单、
+          进程占用跳过、旧版本清理、总耗时）/ 出现错误，标题三态；错误通知用 urgent 长停留（可穿透勿扰，
+          老系统不识别该属性时自动回退普通样式，无兼容风险）。Toast 发送链：本进程直发（PS 5.1）→
+          委托 powershell.exe 5.1 子进程（pwsh 7 无 WinRT 投影语法）→ 仅控制台可见（手动双击）时 MessageBox
+          兑底，静默任务路径永不弹阻塞对话框。维护分工：通知样式/停留时长只改 Show-ScoopToast；
+          汇报项增减/措辞只改 ConvertTo-ToastText（单点维护）
     启动方式：计划任务经 wscript.exe 调用 auto-update.vbs 以窗口样式 0 启动本脚本，全程零窗口（无 conhost 闪现）；
           也可双击配套 auto-update.cmd 手动全量更新+清理（控制台窗口可见进度）
     任务自愈：本脚本每次运行开头检查计划任务 ScoopAutoUpdate——缺失时（新部署/重装/被删除）在交互模式
@@ -22,11 +26,13 @@
           双击 auto-update.cmd 即自动注册任务（交互确认）+ 执行一次完整更新；重装系统后同样只需双击一次。
           全程不硬编码路径。
 .NOTES
-    兼容 Windows PowerShell 5.1 与 PowerShell 7+（VBS 包装器与 WinRT Toast 均两版本通用）
+    兼容 Windows PowerShell 5.1 与 PowerShell 7+（VBS 包装器两版本通用；Toast 直发仅 5.1 支持，
+    pwsh 7 下自动委托 powershell.exe 5.1 子进程代发——WinRT 的 ContentType=WindowsRuntime 投影语法是 5.1 专有）
     本文件须保存为 UTF-8 with BOM（PS 5.1 按 ANSI 读无 BOM 文件会破坏中文并可能解析失败）
 #>
 
 $ErrorActionPreference = 'Continue'   # 单个失败不中断整体流程
+$scriptStart = Get-Date               # 总耗时统计起点（汇总通知用）
 
 # ---------- Scoop 根目录推导（不硬编码路径，可拷到任意 Scoop 机器） ----------
 # 部署约定：本脚本位于 Scoop 根目录下的子文件夹（如 AutoUpdate\，与 apps\、shims\ 的父目录同级）
@@ -125,33 +131,125 @@ function Remove-SkipNoise([string]$Text) {
     }) -join "`r`n"
 }
 
-# ---------- 错误通知：优先桌面 Toast，失败时降级为前台 MessageBox（PS 5.1/7 通用） ----------
-function Show-UpdateError([string]$Body) {
-    try {
-        [void][Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime]
-        [void][Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom, ContentType = WindowsRuntime]
-        $template = @"
-<toast>
+# ---------- 通知发送（唯一出口）：本进程直发 Toast（5.1）→ 委托 5.1 子进程（pwsh 7）→ 可见控制台时 MessageBox 兑底 ----------
+# -Urgent 加 scenario="urgent"：停留更久、可穿透勿扰；不识别该属性的老系统会静默按普通样式显示（无报错路径）。
+# pwsh 7 不支持 WinRT 投影语法（ContentType=WindowsRuntime 为 5.1 专有），委托系统自带 powershell.exe 5.1
+# 代发（零外部依赖，保证可移植）；Toast XML 只在本函数构建一处，子进程仅负责显示。MessageBox 兑底仅在
+# 控制台窗口可见（手动双击 .cmd）时弹出——静默任务路径（vbs 隐藏窗口）永不弹阻塞对话框。样式调整只改本函数。
+function Show-ScoopToast {
+    param(
+        [string]$Title,
+        [string[]]$Body,
+        [switch]$Urgent
+    )
+
+    # Toast XML 单一构建点
+    $scenarioAttr = ''
+    if ($Urgent) { $scenarioAttr = ' scenario="urgent"' }
+    $bodyXml = (@($Body) | Where-Object { $_ }) | ForEach-Object {
+        '      <text>{0}</text>' -f [System.Security.SecurityElement]::Escape($_)
+    }
+    $template = @"
+<toast$scenarioAttr>
   <visual>
     <binding template="ToastGeneric">
-      <text>Scoop 自动更新出现错误</text>
-      <text>{0}</text>
+      <text>$([System.Security.SecurityElement]::Escape($Title))</text>
+$bodyXml
     </binding>
   </visual>
 </toast>
-"@ -f [System.Security.SecurityElement]::Escape($Body)
+"@
+
+    $shown = $false
+    # 路径 1：本进程直发（Windows PowerShell 5.1 原生支持 WinRT 投影）
+    try {
+        [void][Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime]
+        [void][Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom, ContentType = WindowsRuntime]
         $xml = New-Object Windows.Data.Xml.Dom.XmlDocument
         $xml.LoadXml($template)
         $toast = [Windows.UI.Notifications.ToastNotification]::new($xml)
         [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('Microsoft.Windows.PowerShell').Show($toast)
-    } catch {
+        $shown = $true
+    } catch { }
+
+    # 路径 2：pwsh 7 直发失败时委托 powershell.exe 5.1 子进程代发（XML 经环境变量传递，避免引号问题）
+    if (-not $shown) {
         try {
-            Add-Type -AssemblyName System.Windows.Forms
-            [System.Windows.Forms.MessageBox]::Show($Body, 'Scoop 自动更新出现错误', 'OK', 'Warning') | Out-Null
-        } catch {
-            Write-Host "（错误通知发送失败，详情见 update.log）"
+            $env:ScoopToastXml = $template
+            $child = @'
+try {
+    [void][Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime]
+    [void][Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom, ContentType = WindowsRuntime]
+    $xml = New-Object Windows.Data.Xml.Dom.XmlDocument
+    $xml.LoadXml($env:ScoopToastXml)
+    $toast = [Windows.UI.Notifications.ToastNotification]::new($xml)
+    [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('Microsoft.Windows.PowerShell').Show($toast)
+    exit 0
+} catch { exit 1 }
+'@
+            $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($child))
+            & "$env:windir\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -EncodedCommand $encoded
+            $shown = ($LASTEXITCODE -eq 0)
+        } catch { } finally {
+            Remove-Item Env:\ScoopToastXml -ErrorAction SilentlyContinue
         }
     }
+
+    # 兑底：仅控制台窗口可见（手动双击）时弹 MessageBox；静默路径（vbs 隐藏窗口/无控制台）只写日志，不阻塞
+    if (-not $shown) {
+        try {
+            Add-Type -AssemblyName System.Windows.Forms
+            Add-Type -Namespace Win32 -Name NativeMethods -MemberDefinition '[DllImport("user32.dll")] public static extern IntPtr GetConsoleWindow(); [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hWnd);'
+            if ([Win32.NativeMethods]::IsWindowVisible([Win32.NativeMethods]::GetConsoleWindow())) {
+                [System.Windows.Forms.MessageBox]::Show((@($Body) -join "`r`n"), $Title, 'OK', 'Warning') | Out-Null
+            } else {
+                Write-Host "（桌面通知发送失败，详情见 update.log）"
+            }
+        } catch {
+            Write-Host "（桌面通知发送失败，详情见 update.log）"
+        }
+    }
+}
+
+# ---------- 汇总数据 → 通知文案：汇报项的增减/改措辞只动本函数（数据在脚本尾部组装） ----------
+function ConvertTo-ToastText {
+    param([pscustomobject]$R)
+    $lines = New-Object System.Collections.Generic.List[string]
+
+    if ($R.HasError) {
+        $title = 'Scoop 自动更新出现错误'
+        $lines.Add(('错误详情：{0}' -f $R.ErrorSummary))
+        if ($R.UpdatedCount -gt 0) {
+            $lines.Add(('本轮已更新 {0} 个：{1}' -f $R.UpdatedCount, $R.UpdatedSummary))
+        }
+    } elseif ($R.UpdatedCount -gt 0) {
+        $title = ('Scoop 自动更新：已更新 {0} 个应用' -f $R.UpdatedCount)
+        $lines.Add(('已更新：{0}' -f $R.UpdatedSummary))
+    } else {
+        $title = 'Scoop 自动更新：所有应用均为最新'
+        $lines.Add('无应用需要更新')
+    }
+
+    if (@($R.Skipped).Count -gt 0) {
+        $lines.Add(('进程占用跳过：{0}（关闭程序后可手动补更）' -f ($R.Skipped -join '、')))
+    }
+    if ($R.CleanedCount -gt 0 -or @($R.CleanupFailed).Count -gt 0) {
+        $line = ('旧版本清理：{0} 个应用' -f $R.CleanedCount)
+        if (@($R.CleanupFailed).Count -gt 0) {
+            $line += ('；{0} 个占用下轮补清：{1}' -f @($R.CleanupFailed).Count, ($R.CleanupFailed -join '、'))
+        }
+        $lines.Add($line)
+    } else {
+        $lines.Add('旧版本清理：无旧版本需清理')
+    }
+
+    if ($R.Elapsed.TotalMinutes -ge 1) {
+        $lines.Add(('耗时 {0} 分 {1} 秒' -f [int][Math]::Floor($R.Elapsed.TotalMinutes), $R.Elapsed.Seconds))
+    } else {
+        $lines.Add(('耗时 {0} 秒' -f [int][Math]::Floor($R.Elapsed.TotalSeconds)))
+    }
+
+    return @{ Title = $title; Lines = @($lines) }
 }
 
 # ---------- 日志轮转：超过 10MB 仅保留最后 2000 行 ----------
@@ -258,6 +356,7 @@ if ($runningPwsh.Count -gt 0) {
 Write-Host ''
 Write-Host '>>> 步骤 3/3：scoop cleanup 逐应用清理旧版本目录与过期下载缓存'
 $cleanupFailed = New-Object System.Collections.Generic.List[string]
+$cleanedCount = 0
 $appNames = Get-ChildItem (Join-Path $scoopHome 'apps') -Directory | Select-Object -ExpandProperty Name
 foreach ($appName in $appNames) {
     $oneOutput = & "$scoopHome\shims\scoop.cmd" cleanup $appName -k 2>&1 | Out-String
@@ -265,6 +364,7 @@ foreach ($appName in $appNames) {
         $cleanupFailed.Add($appName)
         Write-Host ("[{0}] 清理未完成（可能被进程占用，下轮补清）" -f $appName)
     } elseif ($oneOutput.Trim()) {
+        $cleanedCount++
         Write-Host $oneOutput.TrimEnd()
     }
 }
@@ -274,59 +374,22 @@ if ($cleanupFailed.Count -gt 0) {
     Write-Host '（全部应用清理完成）'
 }
 
-# ---------- 5) 成功通知（有变更且无错误时；失败静默） ----------
-if ($updated.Count -gt 0 -and $failedSteps.Count -eq 0) {
-    try {
-        [void][Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime]
-        [void][Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom, ContentType = WindowsRuntime]
-        $template = @"
-<toast>
-  <visual>
-    <binding template="ToastGeneric">
-      <text>Scoop 自动更新完成</text>
-      <text>已更新 {0} 个应用：{1}</text>
-    </binding>
-  </visual>
-</toast>
-"@ -f $updated.Count, [System.Security.SecurityElement]::Escape($summary)
-        $xml = New-Object Windows.Data.Xml.Dom.XmlDocument
-        $xml.LoadXml($template)
-        $toast = [Windows.UI.Notifications.ToastNotification]::new($xml)
-        [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('Microsoft.Windows.PowerShell').Show($toast)
-    } catch {
-        Write-Host "（桌面通知发送失败，已忽略：$($_.Exception.Message)）"
-    }
+# ---------- 5) 汇总通知（每次运行必发一条；此处只组装结果数据，文案与样式分属上方两个函数，单点维护） ----------
+$report = [pscustomobject]@{
+    HasError       = ($failedSteps.Count -gt 0)
+    ErrorSummary   = $(if ($failedSteps.Count -gt 0) { $errorSummary } else { '' })
+    UpdatedCount   = @($updated).Count
+    UpdatedSummary = $summary
+    Skipped        = @($skipped)
+    CleanedCount   = $cleanedCount
+    CleanupFailed  = @($cleanupFailed)
+    Elapsed        = ((Get-Date) - $scriptStart)
 }
-
-# ---------- 5.5) 进程占用跳过通知（检测到新版本但因进程占用被跳过，提醒关闭程序后手动补更） ----------
-if ($skipped.Count -gt 0) {
-    try {
-        [void][Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime]
-        [void][Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom, ContentType = WindowsRuntime]
-        $skipList = [System.Security.SecurityElement]::Escape(($skipped -join ', '))
-        $template = @"
-<toast>
-  <visual>
-    <binding template="ToastGeneric">
-      <text>Scoop 自动更新：{0} 个应用因进程占用跳过</text>
-      <text>检测到新版本但相关程序正在运行：{1}。关闭程序后运行 scoop update {1} 完成更新。</text>
-    </binding>
-  </visual>
-</toast>
-"@ -f $skipped.Count, $skipList
-        $xml = New-Object Windows.Data.Xml.Dom.XmlDocument
-        $xml.LoadXml($template)
-        $toast = [Windows.UI.Notifications.ToastNotification]::new($xml)
-        [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('Microsoft.Windows.PowerShell').Show($toast)
-    } catch {
-        Write-Host "（跳过提示通知发送失败，已忽略：$($_.Exception.Message)）"
-    }
-}
-
-# ---------- 6) 错误通知（有错误时；无变更无错误则完全静默） ----------
-if ($failedSteps.Count -gt 0) {
-    Show-UpdateError -Body $errorSummary
-}
+$toast = ConvertTo-ToastText -R $report
+Write-Host ''
+Write-Host ('>>> {0}' -f $toast.Title)
+foreach ($line in $toast.Lines) { Write-Host ('>>> {0}' -f $line) }
+Show-ScoopToast -Title $toast.Title -Body $toast.Lines -Urgent:$report.HasError
 
 Write-Host ("==================== 结束 ====================")
 Stop-Transcript | Out-Null
