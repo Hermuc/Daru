@@ -1,12 +1,12 @@
-﻿{
-    "version": "4.3.5",
+{
+    "version": "4.3.6",
     "description": "An AI-powered cross-platform file downloader built with Flutter-style UI on PySide6 | 基于 PySide6 的跨平台 AI 文件下载器",
     "homepage": "https://github.com/XiaoYouChR/Ghost-Downloader-3",
     "license": "GPL-3.0-or-later",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/XiaoYouChR/Ghost-Downloader-3/releases/download/v4.3.5/Ghost-Downloader-v4.3.5-Windows-x86_64.zip",
-            "hash": "8d457b3617e496e6459a55e8ce62739ae2969bbd93fd3c9819db5359f1bebc0d"
+            "url": "https://github.com/XiaoYouChR/Ghost-Downloader-3/releases/download/v4.3.6/Ghost-Downloader-v4.3.6-Windows-x86_64.zip",
+            "hash": "086ef813d94602cfcad29be7858913730ccf400663efc09847f4414e8af14b7b"
         }
     },
     "persist": "GhostDownloader",
