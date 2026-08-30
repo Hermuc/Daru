@@ -16,9 +16,32 @@
         }
     },
     "extract_to": "app",
+    "pre_install": [
+        "# 关闭正在运行的旧版本进程，避免迁移时文件占用",
+        "Stop-Process -Name 'TubaWinUi3' -Force -ErrorAction SilentlyContinue",
+        "# 更新时 Scoop 会清空旧版本目录，而子工具(Everything/CrystalDiskInfo/AIDA64/Dism++ 等)把设置与用户协议状态写在 app\\src\\Tools 下；",
+        "# 先把上一版本目录中的配置文件(ini/cfg/dat/config，约 5MB)备份到 persist\\ToolsConfig，供 post_install 还原到新版本",
+        "$toolsRel = 'app\\src\\Tools'",
+        "$backup = \"$persist_dir\\ToolsConfig\"",
+        "$prev = Get-ChildItem (Split-Path $dir) -Directory | Where-Object { $_.FullName -ne $dir -and $_.Name -ne 'current' -and (Test-Path (Join-Path $_.FullName $toolsRel)) } | Sort-Object LastWriteTime -Descending | Select-Object -First 1",
+        "if ($prev) {",
+        "    $srcTools = Join-Path $prev.FullName $toolsRel",
+        "    $files = @(Get-ChildItem $srcTools -Recurse -File -Include @('*.ini','*.cfg','*.dat','*.config'))",
+        "    Write-Host \"Backing up $($files.Count) tool config file(s) from previous version ...\"",
+        "    foreach ($f in $files) {",
+        "        $target = Join-Path $backup $f.FullName.Substring($srcTools.Length + 1)",
+        "        $tDir = Split-Path $target -Parent",
+        "        if (!(Test-Path $tDir)) { New-Item -ItemType Directory -Force $tDir | Out-Null }",
+        "        Copy-Item $f.FullName $target -Force",
+        "    }",
+        "}"
+    ],
     "post_install": [
         "# 关闭可能正在运行的旧版本进程，避免迁移时文件占用",
         "Stop-Process -Name 'TubaWinUi3' -Force -ErrorAction SilentlyContinue",
+        "# 还原上一版本备份的子工具配置(robocopy 只复制备份中存在的文件，不影响新版本自带文件)",
+        "$backup = \"$persist_dir\\ToolsConfig\"",
+        "if (Test-Path $backup) { robocopy $backup \"$dir\\app\\src\\Tools\" /S /NJH /NJS /NP /NFL /NDL | Out-Null; if ($LASTEXITCODE -ge 8) { Write-Host \"WARNING: tool config restore failed (robocopy $LASTEXITCODE)\" } }",
         "# 数据目录 Junction 化：LocalAppData 路径 -> persist（首次/迁移时自动搬运已有数据）",
         "$link = \"$env:LocalAppData\\TubaWinUi3\"",
         "$dst = \"$persist_dir\\AppData\\Local\\TubaWinUi3\"",
@@ -42,6 +65,10 @@
     ],
     "pre_uninstall": [
         "Stop-Process -Name 'TubaWinUi3' -Force -ErrorAction SilentlyContinue",
+        "# 卸载前把当前版本的子工具配置备份到 persist，避免未经历过更新周期的配置丢失",
+        "$backup = \"$persist_dir\\ToolsConfig\"",
+        "$srcTools = Join-Path $dir 'app\\src\\Tools'",
+        "if (Test-Path $srcTools) { foreach ($f in (Get-ChildItem $srcTools -Recurse -File -Include @('*.ini','*.cfg','*.dat','*.config'))) { $target = Join-Path $backup $f.FullName.Substring($srcTools.Length + 1); $tDir = Split-Path $target -Parent; if (!(Test-Path $tDir)) { New-Item -ItemType Directory -Force $tDir | Out-Null }; Copy-Item $f.FullName $target -Force } }",
         "if ((Test-Path \"$env:LocalAppData\\TubaWinUi3\") -and ((Get-Item \"$env:LocalAppData\\TubaWinUi3\" -Force).LinkType -eq 'Junction')) { (Get-Item \"$env:LocalAppData\\TubaWinUi3\" -Force).Delete() }"
     ],
     "bin": [
