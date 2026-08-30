@@ -15,7 +15,9 @@
     "extract_dir": "GuoheViewPortable",
     "pre_install": [
         "# 关闭正在运行的 GuoheView，避免更新时文件占用导致解压/切换失败",
-        "Stop-Process -Name 'GuoheView', 'GuoheView-Updater' -Force -ErrorAction SilentlyContinue"
+        "Stop-Process -Name 'GuoheView', 'GuoheView-Updater' -Force -ErrorAction SilentlyContinue",
+        "# persist 之前确保 config.ini 存在：包内无此文件时 Scoop 会创建空目录 junction，挡住程序读写导致设置每次重置",
+        "if (!(Test-Path \"$dir\\config.ini\")) { New-Item -ItemType File \"$dir\\config.ini\" | Out-Null }"
     ],
     "persist": [
         "config.ini",
