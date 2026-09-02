@@ -1,0 +1,64 @@
+﻿{
+    "version": "0.12.5",
+    "description": "可扩展的 Vim 增强版编辑器，配置与数据持久化到 Scoop persist（不写 C 盘） | Vim-fork focused on extensibility and usability",
+    "homepage": "https://neovim.io/",
+    "license": {
+        "identifier": "Apache-2.0,Vim",
+        "url": "https://github.com/neovim/neovim/blob/master/LICENSE"
+    },
+    "suggest": {
+        "vcredist": "extras/vcredist2022",
+        "ripgrep": "main/ripgrep"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/neovim/neovim/releases/download/v0.12.5/nvim-win64.zip",
+            "hash": "de8625ba8cf65ebf40eb80a388ba1ec8e9c15b30218821e2c639119b05920de1",
+            "extract_dir": "nvim-win64"
+        },
+        "arm64": {
+            "url": "https://github.com/neovim/neovim/releases/download/v0.12.5/nvim-win-arm64.zip",
+            "hash": "f5a2f7ee4603e0185ed5c3e6dc9db762499426baf1c6613a487da5b5e126ae55",
+            "extract_dir": "nvim-win-arm64"
+        }
+    },
+    "bin": [
+        "bin\\nvim.exe",
+        "bin\\xxd.exe"
+    ],
+    "persist": [
+        "config",
+        "data",
+        "state",
+        "cache"
+    ],
+    "env_set": {
+        "NVIM_APPNAME": "config",
+        "XDG_CONFIG_HOME": "$persist_dir",
+        "XDG_DATA_HOME": "$persist_dir\\data",
+        "XDG_STATE_HOME": "$persist_dir\\state",
+        "XDG_CACHE_HOME": "$persist_dir\\cache"
+    },
+    "notes": [
+        "配置真源：D:\\PortableApps\\Scoop\\persist\\neovim\\config\\init.lua，升级/重装不丢失；",
+        "env_set 写入的是用户级持久环境变量，安装后需重开终端（或注销重登）才生效；",
+        "XDG_* 为跨应用共享变量，极少数其他工具（如 git 的备用配置路径）也可能读取，若发现异常可 scoop uninstall neovim 后手动清除这些用户环境变量；",
+        "依赖 ripgrep（telescope 内容搜索）与 node（pyright 等 LSP 运行时）。"
+    ],
+    "checkver": {
+        "github": "https://api.github.com/repos/neovim/neovim/releases/latest",
+        "jsonpath": "$.body",
+        "regex": "NVIM v(?<majorVersion>[\\w.-]+)\\.(?<minorVersion>[\\w.-]+)\\.(?<patchVersion>[\\w.-]+)",
+        "replace": "${majorVersion}.${minorVersion}.${patchVersion}"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/neovim/neovim/releases/download/v$version/nvim-win64.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/neovim/neovim/releases/download/v$version/nvim-win-arm64.zip"
+            }
+        }
+    }
+}
