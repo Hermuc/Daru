@@ -1,4 +1,4 @@
-{
+﻿{
     "version": "2.5.9",
     "description": "Windows 多网卡带宽叠加与网络加速工具，支持系统代理、多出口调度与 TUN 虚拟网卡模式 | Windows multi-NIC bandwidth aggregation and network acceleration tool with system proxy, multi-exit scheduling and TUN mode",
     "homepage": "https://github.com/Hypostasis-Cat/HypoMux",
