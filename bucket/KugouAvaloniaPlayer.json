@@ -1,5 +1,5 @@
-﻿{
-    "version": "4.0.0",
+{
+    "version": "4.0.1",
     "description": "酷狗音乐第三方客户端：基于 .NET 10 与 Avalonia 的跨平台酷狗音乐播放器，支持歌词显示、无损播放等（便携版） | KugouAvaloniaPlayer: an Avalonia-based cross-platform Kugou music client (portable)",
     "homepage": "https://github.com/Linsxyx/KugouMusic.NET",
     "license": {
@@ -8,8 +8,8 @@
     },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/Linsxyx/KugouMusic.NET/releases/download/v4.0.0/KugouAvaloniaPlayer-win-x64.zip",
-            "hash": "51added0f3b6c3594abd53adafeabe483e3a7e86f479f7b5bb8272335000f454"
+            "url": "https://github.com/Linsxyx/KugouMusic.NET/releases/download/v4.0.1/KugouAvaloniaPlayer-win-x64.zip",
+            "hash": "f878b5c7cb3c258a77a4f45b1fef83b3825194d06bba82e41ea9babb9fd22a62"
         }
     },
     "extract_dir": "current",
