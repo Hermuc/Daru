@@ -30,6 +30,7 @@ scoop update
 
 | 包名 | 简介 |
 |------|------|
+| [bcuninstaller](bucket/bcuninstaller.json) | 批量程序卸载工具（Bulk Crap Uninstaller），支持高级自动化与规则导入 |
 | [FlClash](bucket/FlClash.json) | 基于 ClashMeta 的多平台代理客户端，开源无广告 |
 | [ghost-downloader-3](bucket/ghost-downloader-3.json) | 基于 PySide6 的跨平台 AI 文件下载器 |
 | [GuoheView](bucket/GuoheView.json) | 轻量极速看图软件，支持 90+ 格式、相机 RAW 与 ICC 色彩管理 |

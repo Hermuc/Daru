@@ -1,0 +1,60 @@
+﻿{
+    "version": "6.3.0",
+    "description": "Bulk program uninstaller with advanced automation（便携版） | 批量程序卸载工具，支持高级自动化与规则导入",
+    "homepage": "https://www.bcuninstaller.com/",
+    "license": {
+        "identifier": "Apache-2.0",
+        "url": "https://github.com/BCUninstaller/Bulk-Crap-Uninstaller/blob/master/Licence.txt"
+    },
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/BCUninstaller/Bulk-Crap-Uninstaller/releases/download/v6.3/BCUninstaller_6.3.0_portable.7z",
+            "hash": "1ab75c8fdb88cfc8c05012ef21136f35e7c477bb58b7f69d7d3b4495179c5dc3",
+            "extract_dir": "win-x64"
+        },
+        "arm64": {
+            "url": "https://github.com/BCUninstaller/Bulk-Crap-Uninstaller/releases/download/v6.3/BCUninstaller_6.3.0_portable.7z",
+            "hash": "1ab75c8fdb88cfc8c05012ef21136f35e7c477bb58b7f69d7d3b4495179c5dc3",
+            "extract_dir": "win-arm64"
+        }
+    },
+    "pre_install": [
+        "# 关闭正在运行的 BCUninstaller，避免更新时文件占用导致解压/切换失败",
+        "Stop-Process -Name 'BCUninstaller' -Force -ErrorAction SilentlyContinue",
+        "# persist 要求源端已存在同名「文件」：首次安装先写最小合法 XML 骨架，否则 Scoop 默认按目录创建（见 lib/install.ps1 persist_data 注释）",
+        "if (!(Test-Path \"$dir\\BCUninstaller.settings\")) { Set-Content -Path \"$dir\\BCUninstaller.settings\" -Value '<?xml version=\"1.0\" encoding=\"utf-8\"?>', '<configuration>', '</configuration>' -Encoding UTF8 }"
+    ],
+    "persist": "BCUninstaller.settings",
+    "bin": [
+        "BCUninstaller.exe",
+        "BCU-console.exe"
+    ],
+    "shortcuts": [
+        [
+            "BCUninstaller.exe",
+            "Bulk Crap Uninstaller"
+        ]
+    ],
+    "notes": [
+        "便携版：设置存放在 exe 同级的 BCUninstaller.settings（经 persist 链接至 Scoop\\persist\\bcuninstaller），更新不丢失；",
+        "压缩包内为 win-x64 / win-arm64 两套自包含运行时，按架构取用（extract_dir 已指向对应目录），无需另装 .NET 运行时；",
+        "压缩包根目录的 BCUninstaller.exe 为架构选择 stub，Daru 直接使用 win-<arch> 下的主程序，故未收录；",
+        "卸载软件需管理员权限：启动后按需请求 UAC 提权，属正常行为。",
+        "自定义的卸载规则 / 脚本请另行备份：程序目录随版本更新整体替换，仅 BCUninstaller.settings 经 persist 保留。"
+    ],
+    "checkver": {
+        "github": "https://api.github.com/repos/BCUninstaller/Bulk-Crap-Uninstaller/releases/latest",
+        "jsonpath": "$.assets[*].browser_download_url",
+        "regex": "BCUninstaller_([\\d.]+)_portable\\.7z"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/BCUninstaller/Bulk-Crap-Uninstaller/releases/latest/download/BCUninstaller_$version_portable.7z"
+            },
+            "arm64": {
+                "url": "https://github.com/BCUninstaller/Bulk-Crap-Uninstaller/releases/latest/download/BCUninstaller_$version_portable.7z"
+            }
+        }
+    }
+}
