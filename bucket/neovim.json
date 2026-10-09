@@ -1,4 +1,4 @@
-{
+﻿{
     "version": "0.12.6",
     "description": "可扩展的 Vim 增强版编辑器，配置与数据持久化到 Scoop persist（不写 C 盘） | Vim-fork focused on extensibility and usability",
     "homepage": "https://neovim.io/",
