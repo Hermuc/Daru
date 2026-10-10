@@ -1,0 +1,93 @@
+﻿{
+    "version": "3.7.4",
+    "description": "AI Work 助手 — 多账号签到、登录态切换、设备标识隔离与 OpenAI/Anthropic/Codex 三协议 API 网关，支持 Trae Work / Trae / WorkBuddy / CodeBuddy / Qoder / 豆包。",
+    "homepage": "https://github.com/smart-open/TraeWorkAssistant",
+    "license": {
+        "identifier": "MIT",
+        "url": "https://github.com/smart-open/TraeWorkAssistant/blob/main/LICENSE"
+    },
+    "notes": [
+        "数据目录（conf/app_settings.json、vault.stronghold、data/aiwork.sqlite、logs）与 WebView2 缓存",
+        "分别固定落于 %APPDATA%\\AIWorkAssistant 与 %LOCALAPPDATA%\\com.aiwork.assistant，源码未提供覆盖开关，",
+        "已参照 FlClash/QQ 模式通过 junction 重定向至 $persist_dir，重装系统后 scoop install 即自动恢复；",
+        "首次安装/更新时自动迁移既有数据，原目录保留为 .bak-<时间戳> 回滚点，确认无误后可手动删除；",
+        "卸载仅移除 junction，$persist_dir 下数据保留。",
+        "",
+        "应用内自带 Tauri 自动更新，会直接改写版本目录、绕过 scoop 的版本管理。建议在设置里关闭自动更新，",
+        "改用 'scoop update AIWorkAssistant' 升级。",
+        "",
+        "该工具的 MITM 代理（装自签 CA、接管系统代理）与 6 层设备标识重置（含注册表 MachineGuid，需管理员）",
+        "属于系统级操作，junction 无法隔离；README 自身声明此类用法可能违反上游服务条款，风险自负。"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/smart-open/TraeWorkAssistant/releases/download/v3.7.4/AI.Work._3.7.4_x64_portable.zip",
+            "hash": "6c8e6f55ad3ab46d67720b6c88fddfa18af0d2162fa9503deb94689218023859"
+        }
+    },
+    "pre_install": [
+        "# 关闭正在运行的主程序，避免更新时 exe 被占用",
+        "Stop-Process -Name 'ai-work-assistant' -Force -ErrorAction SilentlyContinue"
+    ],
+    "installer": {
+        "script": [
+            "# portable zip 的顶层目录名是中文且未带 UTF-8 标志位，解压后目录名依赖解压器的编码猜测，",
+            "# 因此不按目录名取文件，而是按主程序文件名定位后提升到 $dir 根目录（唯一 exe，与目录名无关）。",
+            "$exe = Get-ChildItem -Path $dir -Filter 'ai-work-assistant.exe' -Recurse | Select-Object -First 1",
+            "if (-not $exe) { throw 'ai-work-assistant.exe not found in extracted archive' }",
+            "if ($exe.DirectoryName -ne $dir) { Move-Item -Path $exe.FullName -Destination (Join-Path $dir 'ai-work-assistant.exe') -Force }",
+            "Get-ChildItem -Path $dir -Directory -Force | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue",
+            "",
+            "# 数据目录 Junction 化：应用把数据硬编码写入 %APPDATA%/AIWorkAssistant 与",
+            "# %LOCALAPPDATA%/com.aiwork.assistant，无法经 persist 字段链接（不在版本目录内），",
+            "# 故参照 FlClash/QQ 模式重定向至 $persist_dir，重装系统后数据不丢失。",
+            "function Ensure-LinkedData {",
+            "    param($Target, $Link)",
+            "    if (Test-Path $Link) {",
+            "        $item = Get-Item $Link -Force",
+            "        if ($item.LinkType -eq 'Junction') { Write-Host \"Already linked: $Link\"; return }",
+            "        $bak = \"$Link.bak-$([DateTime]::Now.ToString('yyyyMMddHHmmss'))\"",
+            "        New-Item -ItemType Directory -Path $Target -Force | Out-Null",
+            "        Write-Host \"Migrating existing data: $Link -> $Target\"",
+            "        robocopy $Link $Target /E /COPY:DAT /DCOPY:DAT /R:2 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null",
+            "        if ($LASTEXITCODE -lt 8) {",
+            "            Rename-Item -Path $Link -NewName (Split-Path $bak -Leaf) -Force",
+            "            New-Item -ItemType Junction -Path $Link -Target $Target | Out-Null",
+            "            Write-Host \"Data migrated. Original kept at $bak - delete it manually after verifying.\"",
+            "        } else { Write-Host \"WARNING: migration failed (robocopy $LASTEXITCODE); junction skipped, data kept in place.\" }",
+            "        return",
+            "    }",
+            "    New-Item -ItemType Directory -Path $Target -Force | Out-Null",
+            "    New-Item -ItemType Junction -Path $Link -Target $Target | Out-Null",
+            "    Write-Host \"Linked: $Link -> $Target\"",
+            "}",
+            "Ensure-LinkedData \"$persist_dir\\appdata\" \"$env:APPDATA\\AIWorkAssistant\"",
+            "Ensure-LinkedData \"$persist_dir\\localappdata\" \"$env:LOCALAPPDATA\\com.aiwork.assistant\""
+        ]
+    },
+    "pre_uninstall": [
+        "# 移除数据目录 junction（保留 $persist_dir 数据）；卸载后原目录不再指向 persist",
+        "foreach ($l in @(\"$env:APPDATA\\AIWorkAssistant\", \"$env:LOCALAPPDATA\\com.aiwork.assistant\")) {",
+        "    if ((Test-Path $l) -and ((Get-Item $l -Force).LinkType -eq 'Junction')) { (Get-Item $l -Force).Delete() }",
+        "}"
+    ],
+    "bin": "ai-work-assistant.exe",
+    "shortcuts": [
+        [
+            "ai-work-assistant.exe",
+            "AI Work Assistant"
+        ]
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/smart-open/TraeWorkAssistant/releases/download/v$version/AI.Work._$version_x64_portable.zip"
+            }
+        },
+        "hash": {
+            "url": "https://github.com/smart-open/TraeWorkAssistant/releases/download/v$version/latest.json",
+            "find": "portable.zip\\\": \\\"$sha256"
+        }
+    }
+}
