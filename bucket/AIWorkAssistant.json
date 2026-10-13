@@ -1,5 +1,5 @@
-﻿{
-    "version": "3.7.10",
+{
+    "version": "3.7.11",
     "description": "AI Work 助手 — 多账号签到、登录态切换、设备标识隔离与 OpenAI/Anthropic/Codex 三协议 API 网关，支持 Trae Work / Trae / WorkBuddy / CodeBuddy / Qoder / 豆包。",
     "homepage": "https://github.com/smart-open/TraeWorkAssistant",
     "license": {
@@ -21,8 +21,8 @@
     ],
     "architecture": {
         "64bit": {
-            "url": "https://github.com/smart-open/TraeWorkAssistant/releases/download/v3.7.10/AI.Work._3.7.10_x64_portable.zip",
-            "hash": "b252e471a6fa95ea899ce3f683966512fb8e4ad05c90814e9f2c0d7267d5c9f4"
+            "url": "https://github.com/smart-open/TraeWorkAssistant/releases/download/v3.7.11/AI.Work._3.7.11_x64_portable.zip",
+            "hash": "c081b43fe11e7e6a34639c9de0a2ed48e76d3f5ccf9bb2477430e38168a25663"
         }
     },
     "pre_install": [
