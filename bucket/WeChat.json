@@ -1,5 +1,5 @@
-﻿{
-    "version": "4.1.15",
+{
+    "version": "4.2.0",
     "description": "Free messaging and calling app by Tencent (portable extraction of the official installer)",
     "homepage": "https://pc.weixin.qq.com/",
     "license": {
@@ -15,8 +15,8 @@
         "Extraction uses Scoop's 7zip helper; with 'scoop config use_external_7zip true' an external 7z.exe on PATH is used.",
         "Official releases do not provide hash files, so after autoupdate detects a new version the hash must be filled in manually."
     ],
-    "url": "https://dldir1v6.qq.com/weixin/Universal/Windows/WeChatWin_4.1.15.exe#/dl.7z",
-    "hash": "2474cdbef82c86f9266a24f7a10cddb1c19589b76980c5bd745645e47d4c4952",
+    "url": "https://dldir1v6.qq.com/weixin/Universal/Windows/WeChatWin_4.2.0.exe#/dl.7z",
+    "hash": "fc948730e854ae0e03e64ac57ffde0f61b530d7a571d16df411914bad30a1526",
     "pre_install": "Stop-Process -Name 'Weixin', 'WeChat', 'WeixinUpdate', 'WeixinExt' -Force -ErrorAction SilentlyContinue",
     "installer": {
         "script": [
