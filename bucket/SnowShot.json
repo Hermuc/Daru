@@ -1,0 +1,64 @@
+﻿{
+    "version": "1.4.4",
+    "description": "A screenshot utility for capturing, annotating, pinning, and recognizing screen content. | 截图 / 贴图 / 录屏 / 文字识别（OCR）工具",
+    "homepage": "https://snowshot.top",
+    "license": {
+        "identifier": "GPL-3.0-or-later",
+        "url": "https://github.com/mg-chao/snow-apps/blob/main/LICENSE.md"
+    },
+    "notes": [
+        "更新前请退出 Snow Shot 并结束录制；请用 scoop update SnowShot 更新，不要用应用内置更新器，",
+        "否则 Scoop 记录的版本会与实际安装文件不同步。",
+        "用户数据（设置 config.json、截图历史 capture_history、日志等）位于安装目录 bin\\portable，",
+        "已通过 persist 保留在 persist\\SnowShot\\bin\\portable，升级、普通卸载重装均不丢失；",
+        "如需连同数据彻底删除，请在已安装状态下执行 scoop uninstall SnowShot --purge。",
+        "本清单为官方 Windows x64 portable 版，含默认 OCR 资源与二维码识别模型。"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/mg-chao/snow-apps/releases/download/v1.4.4_snow-shot/snow-shot-1.4.4-windows-x64-portable.zip",
+            "hash": "ca2ffa8e1660e4f224693bf28560da79762170dc9ebe21fc966fbaddc8a5145d"
+        }
+    },
+    "pre_install": [
+        "# 关闭正在运行的 Snow Shot 相关进程，避免更新/迁移时文件占用（进行中的录制请先手动结束）",
+        "Stop-Process -Name 'snow_shot', 'snow-shot-updater', 'snow-shot-mcp' -Force -ErrorAction SilentlyContinue"
+    ],
+    "bin": [
+        [
+            "bin\\snow_shot.exe",
+            "snowshot"
+        ]
+    ],
+    "shortcuts": [
+        [
+            "bin\\snow_shot.exe",
+            "Snow Shot"
+        ]
+    ],
+    "persist": "bin\\portable",
+    "checkver": {
+        "url": "https://api.github.com/repos/mg-chao/snow-apps/releases?per_page=100",
+        "script": [
+            "$releases = ($page | ConvertFrom-Json) | Where-Object { -not $_.draft -and -not $_.prerelease -and $_.tag_name -cmatch '^v(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:_snow-shot)?$' }",
+            "$releases = $releases | Sort-Object { [version] ($_.tag_name -replace '^v|_snow-shot$', '') } -Descending",
+            "foreach ($release in $releases) {",
+            "    $version = $release.tag_name -replace '^v|_snow-shot$', ''",
+            "    $name = \"snow-shot-$version-windows-x64-portable.zip\"",
+            "    $asset = $release.assets | Where-Object { $_.name -ceq $name -and $_.browser_download_url -ceq \"https://github.com/mg-chao/snow-apps/releases/download/$($release.tag_name)/$name\" } | Select-Object -First 1",
+            "    if ($asset) { $asset.browser_download_url; break }",
+            "}"
+        ],
+        "regex": "/download/(?<tag>v(?<version>\\d+\\.\\d+\\.\\d+)(?:_snow-shot)?)/snow-shot-\\k<version>-windows-x64-portable\\.zip$"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/mg-chao/snow-apps/releases/download/$matchTag/snow-shot-$version-windows-x64-portable.zip",
+                "hash": {
+                    "url": "$url.sha256"
+                }
+            }
+        }
+    }
+}
