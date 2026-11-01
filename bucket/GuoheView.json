@@ -1,5 +1,5 @@
-﻿{
-    "version": "3.4.12.120",
+{
+    "version": "3.4.16.125",
     "description": "果核看图：基于自研 CORE UI 框架（Direct2D）的轻量级极速看图软件，支持 90+ 格式与相机 RAW、ICC 色彩管理（便携版） | GuoheView: a fast lightweight image viewer with 90+ formats and RAW support (portable)",
     "homepage": "https://pic.ghxi.com",
     "license": {
@@ -8,8 +8,8 @@
     },
     "architecture": {
         "64bit": {
-            "url": "https://rj.lovestu.com/api/v1/release-files/197/download#/dl.7z",
-            "hash": "a9bf10a802fdd7c9ff825ebef40daa33ffc0b8c798f9005836db51b364992d74"
+            "url": "https://rj.lovestu.com/api/v1/release-files/225/download#/dl.7z",
+            "hash": "12f67e1e3f21e8f543d9bb0c0ec4f71ede6e98d27071e0bf3dc93653ca14c3b3"
         }
     },
     "extract_dir": "GuoheViewPortable",
