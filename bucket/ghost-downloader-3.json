@@ -13,7 +13,12 @@
     "notes": [
         "便携模式：exe 同级存在 GhostDownloader 目录（经 persist 链接至 Scoop\\persist\\ghost-downloader-3），",
         "配置（UserConfig.json）、任务列表（tasks.jsonl）与组件（FFmpeg/M3U8DL/YtDlp）均存于该目录，",
-        "更新不丢失，可随程序目录整体迁移。"
+        "更新不丢失，可随程序目录整体迁移。",
+        "浏览器扩展：加载已解压的扩展时，请固定选择 persist 下的真实目录：",
+        "Scoop\\persist\\ghost-downloader-3\\GhostDownloader\\browser_extension，",
+        "不要选 apps\\ghost-downloader-3\\<版本号>\\... 下的路径——该版本目录会在每次更新后被清理删除，",
+        "浏览器记录的加载路径随之失效，扩展消失且需重新配对（每次重载还会生成新扩展 ID）。",
+        "从 persist 真实目录加载一次即可长期有效：应用内置「更新扩展」会原地刷新该目录，加载路径不变。"
     ],
     "shortcuts": [
         [
