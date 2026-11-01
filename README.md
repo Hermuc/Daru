@@ -42,7 +42,6 @@ scoop update
 | [OpenSpeedy](bucket/OpenSpeedy.json) | 开源免费的游戏变速工具，突破帧率限制 |
 | [optimizerduck](bucket/optimizerduck.json) | 开源 Windows 性能与隐私优化工具（需管理员运行） |
 | [PiliPlus](bucket/PiliPlus.json) | Flutter 开发的 BiliBili 第三方客户端 |
-| [PixPin](bucket/PixPin.json) | 功能强大、使用简单的截图 / 贴图 / 录屏工具 |
 | [QQ](bucket/QQ.json) | 腾讯 QQ（NT 架构，官方安装器便携提取） |
 | [tubatools](bucket/tubatools.json) | 图吧工具箱 WinUI3 版，PC 硬件检测与系统维护工具集 |
 | [WeChat](bucket/WeChat.json) | 腾讯微信（官方安装器便携提取） |
