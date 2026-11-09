@@ -1,0 +1,32 @@
+﻿{
+    "version": "3.7.0",
+    "description": "面向 Android 设备的多功能玩机工具箱（ADB / Fastboot / EDL / 线刷 / 投屏，约 110 项功能） | Multi-tool box for Android device modding",
+    "homepage": "https://github.com/Smart-Paocai/VioletToolBox",
+    "license": {
+        "identifier": "GPL-3.0-or-later",
+        "url": "https://github.com/Smart-Paocai/VioletToolBox/blob/main/LICENSE"
+    },
+    "notes": [
+        "启动时会请求管理员权限（UAC）：ADB / Fastboot / EDL 刷写与线刷功能都需要提权。",
+        "本清单安装的是官方 Releases 的单文件自包含版本（V<版本>_Release.exe）；README 里提到的 VioletToolBox-win-x64.zip 是源码构建用的依赖包，普通用户无需。",
+        "请用 scoop update violettoolbox 更新，不要用应用内置更新器，否则 Scoop 记录的版本会与实际文件不同步。"
+    ],
+    "url": "https://github.com/Smart-Paocai/VioletToolBox/releases/download/v3.7.0/V3.7_Release.exe",
+    "hash": "3fa017c4f79568766a83b6ca79ea89a1c3ef66bae4d2a4f21a632a64205403b6",
+    "shortcuts": [
+        [
+            "V3.7_Release.exe",
+            "紫罗兰工具箱"
+        ]
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "url": "https://github.com/Smart-Paocai/VioletToolBox/releases/download/v$version/V$version_Release.exe",
+        "shortcuts": [
+            [
+                "V$version_Release.exe",
+                "紫罗兰工具箱"
+            ]
+        ]
+    }
+}

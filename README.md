@@ -45,6 +45,7 @@ scoop update
 | [QQ](bucket/QQ.json) | 腾讯 QQ（NT 架构，官方安装器便携提取） |
 | [SnowShot](bucket/SnowShot.json) | 开源免费的截图 / 贴图 / 录屏 / 文字识别（OCR）工具（官方 x64 portable 版） |
 | [tubatools](bucket/tubatools.json) | 图吧工具箱 WinUI3 版，PC 硬件检测与系统维护工具集 |
+| [VioletToolBox](bucket/VioletToolBox.json) | 紫罗兰工具箱，面向 Android 设备的多功能玩机工具箱（ADB / Fastboot / EDL / 线刷 / 投屏，约 110 项功能；需管理员运行） |
 | [WeChat](bucket/WeChat.json) | 腾讯微信（官方安装器便携提取） |
 
 > 清单以 [`bucket/`](bucket/) 目录为准（每个 .json 即一个软件），也可用 `scoop search` 查询。
