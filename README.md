@@ -40,7 +40,6 @@ scoop update
 | [mpv-lazy](bucket/mpv-lazy.json) | mpv 懒人整合版播放器，内置高质量渲染器、着色器与脚本 |
 | [nanazip](bucket/nanazip.json) | 面向现代 Windows 体验的 7-Zip 衍生版 |
 | [OpenSpeedy](bucket/OpenSpeedy.json) | 开源免费的游戏变速工具，突破帧率限制 |
-| [optimizerduck](bucket/optimizerduck.json) | 开源 Windows 性能与隐私优化工具（需管理员运行） |
 | [PiliPlus](bucket/PiliPlus.json) | Flutter 开发的 BiliBili 第三方客户端 |
 | [QQ](bucket/QQ.json) | 腾讯 QQ（NT 架构，官方安装器便携提取） |
 | [SnowShot](bucket/SnowShot.json) | 开源免费的截图 / 贴图 / 录屏 / 文字识别（OCR）工具（官方 x64 portable 版） |
