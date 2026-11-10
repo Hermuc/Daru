@@ -1,5 +1,5 @@
-﻿{
-    "version": "3.3.17",
+{
+    "version": "3.3.18",
     "description": "一款开源免费的游戏变速工具，助您突破帧率限制，带来更流畅丝滑的游戏加速体验 | An open-source and free game speed tool that helps you break frame rate limitations and provides a smoother, silkier gaming acceleration experience",
     "homepage": "https://github.com/game1024/OpenSpeedy",
     "license": {
@@ -7,8 +7,8 @@
     },
     "architecture": {
         "64bit": {
-            "url": "https://github.com/game1024/OpenSpeedy/releases/download/3.3.17/OpenSpeedy-3.3.17-portable-signed.zip",
-            "hash": "405b5aede1be27767c62e19a1bea587a25253cf485d54d3d4b1e81fc4a37b658"
+            "url": "https://github.com/game1024/OpenSpeedy/releases/download/3.3.18/OpenSpeedy-3.3.18-portable-signed.zip",
+            "hash": "d011953bfa0abcc56e7f439c8957c64e472d812ad812ffb61172f8f1840788af"
         }
     },
     "extract_to": "app",
